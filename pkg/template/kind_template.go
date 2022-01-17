@@ -27,11 +27,13 @@ func (k *KindFileTemplate) Execute(w io.Writer) error {
 }
 
 func (k *KindFileTemplate) Populate(v *TemplateFileConfig) error {
+	k.Name = v.Name
 	k.KubeAPIPort = v.KubeApiPort
 	return nil
 }
 
 type KindFileTemplate struct {
+	Name             string
 	KubeAPIPort      int
 	kindFileTemplate string
 }
@@ -39,7 +41,7 @@ type KindFileTemplate struct {
 var kindDefaultFileTemplate string = `
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: cluster1
+name: {{.Name}}
 nodes:
 - role: control-plane
   image: kindest/node:v1.20.7

@@ -6,11 +6,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/footprintai/multikind/assets"
 	"github.com/footprintai/multikind/pkg/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
+
+func newEmptyDir() string {
+	tmpdir, err := ioutil.TempDir("", "unittest")
+	if err != nil {
+		panic(err)
+	}
+	os.Remove(tmpdir) // ensure the dir is not exist, only path we need
+	return tmpdir
+}
 
 func TestVagrantFile(t *testing.T) {
 	// test with memory fs
@@ -20,22 +28,17 @@ func TestVagrantFile(t *testing.T) {
 	//}
 
 	// test with os.fs
-	tmpdir, err := ioutil.TempDir("", "unittest")
-	assert.NoError(t, err)
+	tmpdir := newEmptyDir()
 	fmt.Printf("tmpdir:%s\n", tmpdir)
 	mockFs := afero.NewBasePathFs(afero.NewOsFs(), tmpdir)
 	vdir := NewVagrantFolder(tmpdir)
-
-	templateFs := NewTemplateFilesFs()
-	assert.NoError(t, templateFs.Generate(&template.TemplateFileConfig{
+	assert.NoError(t, vdir.GenerateVagrantFiles(&template.TemplateFileConfig{
 		Name:        "unittest",
 		CPUs:        2,
 		Memory:      1026,
 		SSHPort:     1234,
 		KubeApiPort: 5678,
-	}, NewDefaultTemplates()))
-
-	assert.NoError(t, vdir.DumpFiles(templateFs.FS(), assets.BootstrapFs))
+	}))
 
 	expectedFiles := []string{
 		"Vagrantfile",
