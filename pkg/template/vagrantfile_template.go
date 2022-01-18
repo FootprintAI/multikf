@@ -50,7 +50,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "kind-config.yaml", destination: "/tmp/kind-config.yaml"
   config.vm.provision :shell, path: "bootstrap/bootstrap.sh"
   config.vm.provision :shell, path: "bootstrap/provision-cluster.sh"
-  # config.vm.provision :shell, path: "bootstrap/provision-kf14.sh"
   config.vm.network :forwarded_port, guest: {{.KubeAPIPort}}, guest_ip: "0.0.0.0", host: {{.KubeAPIPort}}
   config.vm.network :forwarded_port, guest: 22, host: {{.SSHPort}}, id: "ssh"
 
