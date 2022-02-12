@@ -5,20 +5,22 @@ import "io"
 type TemplateExecutor interface {
 	Filename() string
 	Execute(io.Writer) error
-	Populate(config *TemplateFileConfig) error
+	Populate(interface{}) error
 }
 
-// TemplateFileConfig is a union template file config
-type TemplateFileConfig struct {
-	Name string
-	// NOTE: only support virtualbox now
+type NameGetter interface {
+	GetName() string
+}
 
-	CPUs   int // number of cpus allocated
-	Memory int // number of bytes memory allocated
+type KubeAPIPortGetter interface {
+	GetKubeAPIPort() int
+}
 
-	// NOTE: GPUs are not supported now
-	// GPUs string
+type SSHPortGetter interface {
+	GetSSHPort() int
+}
 
-	SSHPort     int
-	KubeApiPort int
+type CpuMemoryGetter interface {
+	GetCPUs() int
+	GetMemory() int
 }

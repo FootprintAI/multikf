@@ -1,4 +1,4 @@
-package runtime
+package vagrant
 
 import (
 	"fmt"
@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/footprintai/multikind/pkg/template"
+	vagrantclient "github.com/footprintai/multikind/pkg/client/vagrant"
+	machine "github.com/footprintai/multikind/pkg/machine"
+	"github.com/footprintai/multikind/pkg/machine/vagrant/template"
 	log "github.com/golang/glog"
 )
 
@@ -22,11 +24,12 @@ type VagrantMachines struct {
 	verbose    bool
 }
 
-func (vm *VagrantMachines) NewMachine(name string) *VagrantMachine {
+func (vm *VagrantMachines) NewMachine(name string, config *VagrantMachineConfig) *VagrantMachine {
 	return &VagrantMachine{
 		name:              name,
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
+		config:            config,
 	}
 }
 
@@ -37,13 +40,13 @@ type VagrantMachine struct {
 	config            *VagrantMachineConfig
 }
 
-func (v *VagrantMachine) AddConfig(config *VagrantMachineConfig) {
-	v.config = config
-}
-
 type VagrantMachineConfig struct {
 	CPUs   int
 	Memory int // measured in M bytes
+}
+
+func (v *VagrantMachine) HostDir() string {
+	return v.vagrantMachineDir
 }
 
 func (v *VagrantMachine) Up(forceDeleteIfNecessary bool) error {
@@ -59,6 +62,10 @@ func (v *VagrantMachine) Up(forceDeleteIfNecessary bool) error {
 		return err
 	}
 	return cli.TryUp(forceDeleteIfNecessary)
+}
+
+func (v *VagrantMachine) NewVagrantCli() (*vagrantclient.VagrantCli, error) {
+	return vagrantclient.NewVagrantCli(v.name, v.vagrantMachineDir, v.verbose)
 }
 
 func (v *VagrantMachine) ExportKubeConfig(path string, force bool) error {
@@ -87,21 +94,25 @@ func (v *VagrantMachine) Destroy(force bool) error {
 	return cli.Destroy(force)
 }
 
-func (v *VagrantMachine) Info() (status string, cpuinfo *CpuInfo, meminfo *MemInfo, reterr error) {
-	cli, reterr := v.NewVagrantCli()
-	if reterr != nil {
-		return
+func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
+	cli, err := v.NewVagrantCli()
+	if err != nil {
+		return nil, err
 	}
-	meminfo, reterr = NewMemInfoParserHelper(cli.SshExec("cat /proc/meminfo"))
-	if reterr != nil {
-		return
+	meminfo, err := machine.NewMemInfoParserHelper(cli.SshExec("cat /proc/meminfo"))
+	if err != nil {
+		return nil, err
 	}
-	cpuinfo, reterr = NewCpuInfoParserHelper(cli.SshExec("cat /proc/cpuinfo"))
-	if reterr != nil {
-		return
+	cpuinfo, err := machine.NewCpuInfoParserHelper(cli.SshExec("cat /proc/cpuinfo"))
+	if err != nil {
+		return nil, err
 	}
-	status = cli.Status()
-	return
+	status := cli.Status()
+	return &machine.MachineInfo{
+		CpuInfo: cpuinfo,
+		MemInfo: meminfo,
+		Status:  status,
+	}, nil
 }
 
 func (v *VagrantMachine) Name() string {
@@ -123,15 +134,15 @@ func (v *VagrantMachine) ensureVagrantFiles() error {
 }
 
 func (v *VagrantMachine) prepareFiles() error {
-	sshport, err := findFreeSSHPort()
+	sshport, err := machine.FindFreeSSHPort()
 	if err != nil {
 		return err
 	}
-	kubeport, err := findFreeKubeApiPort()
+	kubeport, err := machine.FindFreeKubeApiPort()
 	if err != nil {
 		return err
 	}
-	log.Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", sshport, kubeport)
+	log.Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", v.name, sshport, kubeport)
 	tmplConfig := &template.TemplateFileConfig{
 		Name:        v.name,
 		CPUs:        v.config.CPUs,
@@ -147,8 +158,9 @@ func (v *VagrantMachine) prepareFiles() error {
 	return nil
 }
 
-func (vm *VagrantMachines) ListMachines() ([]*OutputVagrantMachine, error) {
-	machineNamesMap := map[string]*OutputVagrantMachine{}
+func (vm *VagrantMachines) ListMachines() ([]machine.MachineCURD, error) {
+	var machines []machine.MachineCURD
+	//machineNamesMap := map[string]*OutputVagrantMachine{}
 	vfs := os.DirFS(vm.vagrantDir)
 	entries, err := fs.ReadDir(vfs, ".")
 	if err != nil {
@@ -158,53 +170,9 @@ func (vm *VagrantMachines) ListMachines() ([]*OutputVagrantMachine, error) {
 		if entry.IsDir() {
 			machineName := entry.Name()
 
-			m := vm.NewMachine(machineName)
-			status, cpuinfo, memInfo, err := m.Info()
-			if err != nil {
-				return nil, err
-			}
-			machineNamesMap[machineName] = &OutputVagrantMachine{
-				Name:              machineName,
-				VagrantMachineDir: filepath.Join(vm.vagrantDir, machineName),
-				VagrantStatus:     status,
-				VagrantCpus:       fmt.Sprintf("%d", cpuinfo.NumCPUs()),
-				VagrantMemory:     fmt.Sprintf("%d/%d", memInfo.Free(), memInfo.Total()),
-			}
+			m := vm.NewMachine(machineName, nil)
+			machines = append(machines, m)
 		}
 	}
-
-	var out []*OutputVagrantMachine
-	for _, v := range machineNamesMap {
-		out = append(out, v)
-	}
-	return out, nil
-}
-
-// OutputVagrantMachine defines the output format returned for each VagrantMachine
-type OutputVagrantMachine struct {
-	Name              string `json:"name"`
-	VagrantMachineDir string `json:"dir"`
-	VagrantStatus     string `json:"status"`
-	VagrantCpus       string `json:"cpus"`
-	VagrantMemory     string `json:"memory"`
-}
-
-func (o *OutputVagrantMachine) Headers() []string {
-	return []string{
-		"name",
-		"dir",
-		"status",
-		"cpus",
-		"memory",
-	}
-}
-
-func (o *OutputVagrantMachine) Values() []string {
-	return []string{
-		o.Name,
-		o.VagrantMachineDir,
-		o.VagrantStatus,
-		o.VagrantCpus,
-		o.VagrantMemory,
-	}
+	return machines, nil
 }

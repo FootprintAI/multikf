@@ -1,4 +1,4 @@
-package runtime
+package machine
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	log "github.com/golang/glog"
 )
 
-func findFreeSSHPort() (int, error) {
+func FindFreeSSHPort() (int, error) {
 	start := 2022
 	nextIncr := 100
 	for {
@@ -24,7 +24,7 @@ func findFreeSSHPort() (int, error) {
 	}
 }
 
-func findFreeKubeApiPort() (int, error) {
+func FindFreeKubeApiPort() (int, error) {
 	start := 16443
 	nextIncr := 1000
 	for {

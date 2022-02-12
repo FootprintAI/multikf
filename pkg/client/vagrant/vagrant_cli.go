@@ -1,19 +1,24 @@
-package runtime
+package vagrantclient
 
 import (
+	"fmt"
+	"io/ioutil"
+
 	govagrant "github.com/bmatcuk/go-vagrant"
+	fssh "github.com/footprintai/multikind/pkg/ssh"
 	log "github.com/golang/glog"
+	"golang.org/x/crypto/ssh"
 )
 
-func (v *VagrantMachine) NewVagrantCli() (*VagrantCli, error) {
-	cli, err := govagrant.NewVagrantClient(v.vagrantMachineDir)
+func NewVagrantCli(machineName string, vagrantMachineDir string, verbose bool) (*VagrantCli, error) {
+	cli, err := govagrant.NewVagrantClient(vagrantMachineDir)
 	if err != nil {
 		return nil, err
 	}
 	return &VagrantCli{
-		name:    v.name,
+		name:    machineName,
 		client:  cli,
-		Verbose: v.verbose,
+		Verbose: verbose,
 	}, nil
 }
 
@@ -94,6 +99,45 @@ func (v *VagrantCli) SSHConfig() (SSHConfigFile, error) {
 	return SSHConfigFile{cmd.SSHConfigResponse.Configs[v.name]}, nil
 }
 
+type SSHConfigFile struct {
+	govagrant.SSHConfig
+}
+
+func (s SSHConfigFile) Addr() string {
+	return fmt.Sprintf("%s:%d", s.SSHConfig.HostName, s.SSHConfig.Port)
+}
+
+func (s SSHConfigFile) PrivateKeySigner() (ssh.Signer, error) {
+	key, err := ioutil.ReadFile(s.IdentityFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the Signer for this private key.
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return signer, nil
+}
+
+func (s SSHConfigFile) SSHClientConfig() (*ssh.ClientConfig, error) {
+	signer, err := s.PrivateKeySigner()
+	if err != nil {
+		return nil, err
+	}
+	config := &ssh.ClientConfig{
+		User: s.User,
+		Auth: []ssh.AuthMethod{
+			// Use the PublicKeys method for remote authentication.
+			ssh.PublicKeys(signer),
+		},
+		//HostKeyCallback: ssh.FixedHostKey(hostKey),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	return config, nil
+}
+
 func (v *VagrantCli) Scp(fromRemotePath string, toHostPath string) error {
 	sshconfg, err := v.SSHConfig()
 	if err != nil {
@@ -104,7 +148,7 @@ func (v *VagrantCli) Scp(fromRemotePath string, toHostPath string) error {
 		return err
 	}
 
-	conn, err := NewSSHConn(sshconfg.Addr(), clientconfig)
+	conn, err := fssh.NewSSHConn(sshconfg.Addr(), clientconfig)
 	if err != nil {
 		return err
 	}
@@ -122,7 +166,7 @@ func (v *VagrantCli) SshExec(command string) (string, error) {
 		return "", err
 	}
 
-	conn, err := NewSSHConn(sshconfg.Addr(), clientconfig)
+	conn, err := fssh.NewSSHConn(sshconfg.Addr(), clientconfig)
 	if err != nil {
 		return "", err
 	}
