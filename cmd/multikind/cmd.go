@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	vagrantmachine "github.com/footprintai/multikind/pkg/machine/vagrant"
+	"github.com/footprintai/multikind/pkg/machine"
+	_ "github.com/footprintai/multikind/pkg/machine/host"
+	_ "github.com/footprintai/multikind/pkg/machine/vagrant"
 	"github.com/footprintai/multikind/pkg/version"
 	log "github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -15,7 +17,8 @@ import (
 var (
 	cpus           int    // number of cpus allocated to the vagrant
 	memoryInG      int    // number of Gigabytes allocated to the vagrant
-	vagrantRootDir string // vagrant root dir which containing multiple vagrant folders, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.vagrant)
+	provisionerStr string // provider specifies the underly privisoner for virtual machine, either docker (under host) or vagrant
+	guestRootDir   string // root dir which containing multiple guest machines, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.vagrant)
 	forceDelete    bool   // force to deleted the instance (default: false)
 	forceCreate    bool   // force to create the instance regardless the instance's status (default: false)
 	forceOverwrite bool   // force to overwrite the existing kubeconf file
@@ -25,7 +28,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "multikind",
 		Short: "a multikind cli tool",
-		Long:  `multikind is a command-line tool which use vagrant and kind to provision k8s single-node cluster.`,
+		Long:  `multikind is a command-line tool which use vagrant and docker to provision k8s single-node cluster.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// For cobra + glog flags. Available to all subcommands.
 			goflag.Parse()
@@ -34,7 +37,7 @@ var (
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
-		Short: "version of vagrant machine",
+		Short: "version of multikind ",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version.Print()
 			return nil
@@ -43,7 +46,7 @@ var (
 
 	exportCmd = &cobra.Command{
 		Use:   "export",
-		Short: "export kubeconfig from a vagrant machine",
+		Short: "export kubeconfig from a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
 			return run.Export(args[0], kubeconfigPath)
@@ -52,7 +55,7 @@ var (
 
 	addCmd = &cobra.Command{
 		Use:   "add",
-		Short: "add a vagrant machine",
+		Short: "add a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
 			return run.Add(args[0], cpus, memoryInG)
@@ -60,7 +63,7 @@ var (
 	}
 	deleteCmd = &cobra.Command{
 		Use:   "delete",
-		Short: "delete a vagrant machine",
+		Short: "delete a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
 			return run.Delete(args[0])
@@ -68,7 +71,7 @@ var (
 	}
 	listCmd = &cobra.Command{
 		Use:   "list",
-		Short: "list vagrant machines",
+		Short: "list guest machines",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
 			return run.List()
@@ -85,23 +88,39 @@ func mustNewRunCmd() *runCmd {
 }
 
 func newRunCmd() (*runCmd, error) {
-	//cfg := &runtime.VagrantMachineConfig{
-	//	CPUs:   cpus,
-	//	Memory: memoryInG * 1024, // in M egabytes
-	//}
-	vag := vagrantmachine.NewVagrantMachines(vagrantRootDir, verbose)
+	p, err := machine.ParseProvisioner(provisionerStr)
+	if err != nil {
+		return nil, err
+	}
+	vag, err := machine.NewMachineFactory(p, guestRootDir, verbose)
+	if err != nil {
+		return nil, err
+	}
 	return &runCmd{vag: vag}, nil
 }
 
 type runCmd struct {
-	vag *vagrantmachine.VagrantMachines
+	vag machine.MachinesCURD
+}
+
+type machineConfig struct {
+	cpus      int
+	memoryInG int
+}
+
+func (m machineConfig) GetCPUs() int {
+	return m.cpus
+}
+
+func (m machineConfig) GetMemory() int {
+	return m.memoryInG
 }
 
 func (r *runCmd) Add(name string, cpus, memoryInG int) error {
-	m := r.vag.NewMachine(name, &vagrantmachine.VagrantMachineConfig{
-		CPUs:   cpus,
-		Memory: memoryInG * 1024, // in M egabytes
-	})
+	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG})
+	if err != nil {
+		return err
+	}
 	if err := m.Up(forceCreate); err != nil {
 		log.Errorf("runcmd: add vagrant node (%s) failed, err:%+v\n", name, err)
 		return err
@@ -111,9 +130,12 @@ func (r *runCmd) Add(name string, cpus, memoryInG int) error {
 
 func (r *runCmd) Export(name string, path string) error {
 	if path == "" {
-		path = filepath.Join(vagrantRootDir, name, "kubeconfig")
+		path = filepath.Join(guestRootDir, name, "kubeconfig")
 	}
-	m := r.vag.NewMachine(name, nil)
+	m, err := r.vag.NewMachine(name, nil)
+	if err != nil {
+		return err
+	}
 	if err := m.ExportKubeConfig(path, forceOverwrite); err != nil {
 		log.Errorf("runcmd: export vagrant node (%s) failed, err:%+v\n", name, err)
 		return err
@@ -122,7 +144,10 @@ func (r *runCmd) Export(name string, path string) error {
 }
 
 func (r *runCmd) Delete(name string) error {
-	m := r.vag.NewMachine(name, nil)
+	m, err := r.vag.NewMachine(name, nil)
+	if err != nil {
+		return err
+	}
 	if err := m.Destroy(forceDelete); err != nil {
 		log.Errorf("runcmd: delete vagrant node (%s) failed, err:%+v\n", name, err)
 		return err
@@ -202,8 +227,9 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(exportCmd)
 
-	rootCmd.PersistentFlags().StringVar(&vagrantRootDir, "dir", ".vagrant", "vagrant root dir")
+	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".vagrant", "vagrant root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")
+	rootCmd.PersistentFlags().StringVar(&provisionerStr, "provisioner", "docker", "provisioner, possible value: docker and vagrant")
 	addCmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the vagrant")
 	addCmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the vagrant")
 	addCmd.Flags().BoolVar(&forceCreate, "f", false, "force to create instance regardless the machine status")

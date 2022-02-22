@@ -12,7 +12,7 @@ import (
 	log "github.com/golang/glog"
 )
 
-func NewVagrantMachines(vagrantDir string, verbose bool) *VagrantMachines {
+func NewVagrantMachines(vagrantDir string, verbose bool) machine.MachinesCURD {
 	return &VagrantMachines{
 		vagrantDir: vagrantDir,
 		verbose:    verbose,
@@ -24,13 +24,16 @@ type VagrantMachines struct {
 	verbose    bool
 }
 
-func (vm *VagrantMachines) NewMachine(name string, config *VagrantMachineConfig) *VagrantMachine {
+func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfiger) (machine.MachineCURD, error) {
 	return &VagrantMachine{
 		name:              name,
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
-		config:            config,
-	}
+		config: &VagrantMachineConfig{
+			CPUs:   options.GetCPUs(),
+			Memory: options.GetMemory(),
+		},
+	}, nil
 }
 
 type VagrantMachine struct {
@@ -170,7 +173,7 @@ func (vm *VagrantMachines) ListMachines() ([]machine.MachineCURD, error) {
 		if entry.IsDir() {
 			machineName := entry.Name()
 
-			m := vm.NewMachine(machineName, nil)
+			m, _ := vm.NewMachine(machineName, nil)
 			machines = append(machines, m)
 		}
 	}
