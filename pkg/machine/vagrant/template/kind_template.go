@@ -1,8 +1,11 @@
 package template
 
 import (
+	"fmt"
 	"html/template"
 	"io"
+
+	pkgtemplate "github.com/footprintai/multikind/pkg/template"
 )
 
 func NewKindTemplate() *KindFileTemplate {
@@ -26,9 +29,18 @@ func (k *KindFileTemplate) Execute(w io.Writer) error {
 	return nil
 }
 
-func (k *KindFileTemplate) Populate(v *TemplateFileConfig) error {
-	k.Name = v.Name
-	k.KubeAPIPort = v.KubeApiPort
+type kindConfig interface {
+	pkgtemplate.NameGetter
+	pkgtemplate.KubeAPIPortGetter
+}
+
+func (k *KindFileTemplate) Populate(v interface{}) error {
+	if _, isKindConfiger := v.(kindConfig); !isKindConfiger {
+		return fmt.Errorf("not implements kindConfig interface")
+	}
+	c := v.(kindConfig)
+	k.Name = c.GetName()
+	k.KubeAPIPort = c.GetKubeAPIPort()
 	return nil
 }
 

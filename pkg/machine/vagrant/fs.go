@@ -1,56 +1,25 @@
-package runtime
+package vagrant
 
 import (
-	"bytes"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
 
 	"github.com/footprintai/multikind/assets"
+	vagranttemplates "github.com/footprintai/multikind/pkg/machine/vagrant/template"
 	"github.com/footprintai/multikind/pkg/template"
+	templatefs "github.com/footprintai/multikind/pkg/template/fs"
+
 	//log "github.com/golang/glog"
 	"github.com/spf13/afero"
 )
 
 func NewDefaultTemplates() []template.TemplateExecutor {
 	return []template.TemplateExecutor{
-		template.NewKindTemplate(),
-		template.NewDefaultVagrantTemplate(),
+		vagranttemplates.NewKindTemplate(),
+		vagranttemplates.NewDefaultVagrantTemplate(),
 	}
-}
-
-func NewMemoryFilesFs() *MemoryFilesFs {
-	return &MemoryFilesFs{
-		vfs: afero.NewMemMapFs(),
-	}
-}
-
-// MemoryFilesFs holds a set of template files
-type MemoryFilesFs struct {
-	vfs afero.Fs
-}
-
-func (t *MemoryFilesFs) FS() fs.FS {
-	return afero.NewIOFS(t.vfs)
-}
-
-func (t *MemoryFilesFs) Generate(config *template.TemplateFileConfig, additionalTemplates ...template.TemplateExecutor) error {
-	execTemplates := NewDefaultTemplates()
-	execTemplates = append(execTemplates, additionalTemplates...)
-	for _, exec := range execTemplates {
-		if err := exec.Populate(config); err != nil {
-			return err
-		}
-		bytesInFile := &bytes.Buffer{}
-		if err := exec.Execute(bytesInFile); err != nil {
-			return err
-		}
-		if err := afero.WriteFile(t.vfs, exec.Filename(), bytesInFile.Bytes(), 0666); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func NewVagrantFolder(folderPath string) *VagrantFolder {
@@ -81,9 +50,9 @@ func (v *VagrantFolder) ensureFolder() error {
 	return nil
 }
 
-func (v *VagrantFolder) GenerateVagrantFiles(tmplConfig *template.TemplateFileConfig) error {
-	memoryFileFs := NewMemoryFilesFs()
-	if err := memoryFileFs.Generate(tmplConfig); err != nil {
+func (v *VagrantFolder) GenerateVagrantFiles(tmplConfig *vagranttemplates.TemplateFileConfig) error {
+	memoryFileFs := templatefs.NewMemoryFilesFs()
+	if err := memoryFileFs.Generate(tmplConfig, NewDefaultTemplates()...); err != nil {
 		return err
 	}
 	if err := v.dumpFiles(memoryFileFs.FS(), assets.BootstrapFs); err != nil {

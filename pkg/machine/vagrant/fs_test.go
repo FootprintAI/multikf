@@ -1,4 +1,4 @@
-package runtime
+package vagrant
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/footprintai/multikind/pkg/template"
+	"github.com/footprintai/multikind/pkg/machine/vagrant/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

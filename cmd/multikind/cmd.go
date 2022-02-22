@@ -2,10 +2,11 @@ package multikind
 
 import (
 	goflag "flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/footprintai/multikind/pkg/runtime"
+	vagrantmachine "github.com/footprintai/multikind/pkg/machine/vagrant"
 	"github.com/footprintai/multikind/pkg/version"
 	log "github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -88,17 +89,16 @@ func newRunCmd() (*runCmd, error) {
 	//	CPUs:   cpus,
 	//	Memory: memoryInG * 1024, // in M egabytes
 	//}
-	vag := runtime.NewVagrantMachines(vagrantRootDir, verbose)
+	vag := vagrantmachine.NewVagrantMachines(vagrantRootDir, verbose)
 	return &runCmd{vag: vag}, nil
 }
 
 type runCmd struct {
-	vag *runtime.VagrantMachines
+	vag *vagrantmachine.VagrantMachines
 }
 
 func (r *runCmd) Add(name string, cpus, memoryInG int) error {
-	m := r.vag.NewMachine(name)
-	m.AddConfig(&runtime.VagrantMachineConfig{
+	m := r.vag.NewMachine(name, &vagrantmachine.VagrantMachineConfig{
 		CPUs:   cpus,
 		Memory: memoryInG * 1024, // in M egabytes
 	})
@@ -113,7 +113,7 @@ func (r *runCmd) Export(name string, path string) error {
 	if path == "" {
 		path = filepath.Join(vagrantRootDir, name, "kubeconfig")
 	}
-	m := r.vag.NewMachine(name)
+	m := r.vag.NewMachine(name, nil)
 	if err := m.ExportKubeConfig(path, forceOverwrite); err != nil {
 		log.Errorf("runcmd: export vagrant node (%s) failed, err:%+v\n", name, err)
 		return err
@@ -122,7 +122,7 @@ func (r *runCmd) Export(name string, path string) error {
 }
 
 func (r *runCmd) Delete(name string) error {
-	m := r.vag.NewMachine(name)
+	m := r.vag.NewMachine(name, nil)
 	if err := m.Destroy(forceDelete); err != nil {
 		log.Errorf("runcmd: delete vagrant node (%s) failed, err:%+v\n", name, err)
 		return err
@@ -130,19 +130,63 @@ func (r *runCmd) Delete(name string) error {
 	return nil
 }
 
-var dummyRow = &runtime.OutputVagrantMachine{}
+// OutputMachineInfo defines the output format returned for each Machine
+type OutputMachineInfo struct {
+	Name       string `json:"name"`
+	MachineDir string `json:"dir"`
+	Status     string `json:"status"`
+	Cpus       string `json:"cpus"`
+	Memory     string `json:"memory"`
+}
+
+func (o *OutputMachineInfo) Headers() []string {
+	return []string{
+		"name",
+		"dir",
+		"status",
+		"cpus",
+		"memory",
+	}
+}
+
+func (o *OutputMachineInfo) Values() []string {
+	return []string{
+		o.Name,
+		o.MachineDir,
+		o.Status,
+		o.Cpus,
+		o.Memory,
+	}
+}
+
+var dummyRow = &OutputMachineInfo{}
 
 func (r *runCmd) List() error {
 	w := NewFormatWriter(os.Stdout, Table)
-	var listvalues [][]string
-	respList, err := r.vag.ListMachines()
+	machineList, err := r.vag.ListMachines()
 	if err != nil {
 		return err
 	}
-	for _, resp := range respList {
-		listvalues = append(listvalues, resp.Values())
+	machineNamesMap := map[string]*OutputMachineInfo{}
+	for _, m := range machineList {
+		info, err := m.Info()
+		if err != nil {
+			return err
+		}
+		machineNamesMap[m.Name()] = &OutputMachineInfo{
+			Name:       m.Name(),
+			MachineDir: m.HostDir(),
+			Status:     info.Status,
+			Cpus:       fmt.Sprintf("%d", info.CpuInfo.NumCPUs()),
+			Memory:     fmt.Sprintf("%d/%d", info.MemInfo.Free(), info.MemInfo.Total()),
+		}
 	}
-	return w.WriteAndClose(dummyRow.Headers(), listvalues)
+
+	var csvValues [][]string
+	for _, v := range machineNamesMap {
+		csvValues = append(csvValues, v.Values())
+	}
+	return w.WriteAndClose(dummyRow.Headers(), csvValues)
 }
 
 func Main() {

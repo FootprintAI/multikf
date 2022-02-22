@@ -1,8 +1,11 @@
 package template
 
 import (
+	"fmt"
 	"html/template"
 	"io"
+
+	pkgtemplate "github.com/footprintai/multikind/pkg/template"
 )
 
 func NewDefaultVagrantTemplate() *DefaultVagrantFileTemplate {
@@ -26,12 +29,23 @@ func (d *DefaultVagrantFileTemplate) Execute(w io.Writer) error {
 	return nil
 }
 
-func (d *DefaultVagrantFileTemplate) Populate(v *TemplateFileConfig) error {
-	d.VMName = v.Name
-	d.KubeAPIPort = v.KubeApiPort
-	d.SSHPort = v.SSHPort
-	d.Memory = v.Memory
-	d.CPUs = v.CPUs
+type vagrantConfig interface {
+	pkgtemplate.NameGetter
+	pkgtemplate.KubeAPIPortGetter
+	pkgtemplate.SSHPortGetter
+	pkgtemplate.CpuMemoryGetter
+}
+
+func (d *DefaultVagrantFileTemplate) Populate(config interface{}) error {
+	if _, isVagrantConfig := config.(vagrantConfig); !isVagrantConfig {
+		return fmt.Errorf("config didn't implement vagrantConfig interface")
+	}
+	v := config.(vagrantConfig)
+	d.VMName = v.GetName()
+	d.KubeAPIPort = v.GetKubeAPIPort()
+	d.SSHPort = v.GetSSHPort()
+	d.Memory = v.GetMemory()
+	d.CPUs = v.GetCPUs()
 	return nil
 }
 
