@@ -3,6 +3,7 @@ package host
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -123,7 +124,7 @@ func (cli *CLI) ListClusters() ([]string, error) {
 }
 
 func readall(r io.Reader) ([]byte, error) {
-	b := make([]byte, 0, 10240)
+	b := make([]byte, 0, 1024*1024*10 /*10M buffer*/)
 	for {
 		if len(b) == cap(b) {
 			// Add more capacity (let append pick how much).
@@ -268,8 +269,7 @@ func (o *outputStream) Read(b []byte) (int, error) {
 		return 0, io.EOF
 	}
 	if len(out) > len(b) {
-		panic("stop")
-		return 0, errors.New("insufficient buffer size, data could be lost")
+		panic(fmt.Sprintf("insufficient buffer size(buf:%d, data:%d), data could be lost", len(b), len(out)))
 	}
 	n := copy(b[:len(b)-1], []byte(out))
 	b[n] = '\n'

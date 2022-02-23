@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -49,14 +48,14 @@ func (v *Folder) DumpFiles(virtualFs ...fs.FS) error {
 				return nil
 			}
 			if d.IsDir() {
-				fmt.Printf("D %s\n", path)
+				//fmt.Printf("D %s\n", path)
 				//os.Mkdir(path)
 				if err := v.folderFs.MkdirAll(path, 0777); err != nil {
 					return err
 				}
 				return nil
 			}
-			fmt.Printf("F %s\n", path)
+			//fmt.Printf("F %s\n", path)
 			fd, err := vfs.Open(path)
 			if err != nil {
 				return err

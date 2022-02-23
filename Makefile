@@ -1,6 +1,14 @@
-BUILDDIR ?= "./build"
+UILDDIR ?= "./build"
 BUILDTIME=$(shell date --rfc-3339=seconds)
 GITCOMMITID=$(shell git rev-parse HEAD)
+
+tidy: 
+	./gomodtidy.sh
+
+docker:
+	docker build -t footprintai/multikind:v1 \
+		--no-cache -f Dockerfile .
+	docker push footprintai/multikind:v1
 
 windows: ## Build for Windows
 	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
@@ -14,7 +22,7 @@ darwin: ## Build for Darwin (macOS)
 	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 \
     go build -ldflags '-X "github.com/footprintai/multikind/pkg/version.BuildTime='"${BUILDTIME}"'" -X "github.com/footprintai/multikind/pkg/version.GitCommitId='"${GITCOMMITID}"'" -extldflags "-static"' -o ${BUILDDIR}/multikind.darwin main.go
 
-darwinSilicon:  ## Build for Darwin Silicon (macOS M1)
+darwinSilicon: ## Build for Darwin Silicon (macOS M1)
 	env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 \
     go build -ldflags '-X "github.com/footprintai/multikind/pkg/version.BuildTime='"${BUILDTIME}"'" -X "github.com/footprintai/multikind/pkg/version.GitCommitId='"${GITCOMMITID}"'" -extldflags "-static"' -o ${BUILDDIR}/multikind.darwin-arm64 main.go
 
