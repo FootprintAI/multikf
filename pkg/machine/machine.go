@@ -1,5 +1,15 @@
 package machine
 
+type MachinesCURD interface {
+	NewMachine(string, MachineConfiger) (MachineCURD, error)
+	ListMachines() ([]MachineCURD, error)
+}
+
+type MachineConfiger interface {
+	GetCPUs() int
+	GetMemory() int // in M bytes
+}
+
 type MachineCURD interface {
 	Name() string
 	// HostDir returns the configuration files used for that particular machine under host
