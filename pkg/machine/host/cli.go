@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-cmd/cmd"
 	log "github.com/golang/glog"
@@ -91,7 +92,7 @@ func downloadPlainBinary(sourceURL, localpath string) error {
 	}
 	defer out.Close()
 	defer resp.Body.Close()
-	n, err := io.Copy(out, resp.Body)
+	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return err
 	}
@@ -286,7 +287,7 @@ func (o *outputStream) Stdout() error {
 
 func (cli *CLI) runCmd(cmdAndArgs []string) (int, *outputStream, error) {
 	if cli.verbose {
-		log.Infof("cmdandargs:%s, blocking:%v\n", cmdAndArgs, blocking)
+		log.Infof("cmdandargs:%s\n", cmdAndArgs)
 	}
 	cmdOptions := cmd.Options{
 		Buffered:  false,
