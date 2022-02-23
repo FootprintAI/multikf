@@ -12,7 +12,7 @@ ARG BuildTime
 # use go tool $binary | grep $variable
 # to find out actual path
 
-RUN make build
+RUN BUILDDIR=/out make build
 
 FROM alpine:3.15 AS bin
 COPY --from=build /out /out
