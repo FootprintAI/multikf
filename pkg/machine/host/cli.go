@@ -48,6 +48,7 @@ type CLI struct {
 
 func (cli *CLI) ensureBinaries() error {
 	if !fileExists(cli.localKindBinaryPath) {
+		log.Infof("can't found binary from %s, download from intenrnet...\n", cli.localKindBinaryPath)
 		// download kind
 		if err := downloadPlainBinary(cli.urlBinary.Kind, cli.localKindBinaryPath); err != nil {
 			return err
@@ -58,6 +59,7 @@ func (cli *CLI) ensureBinaries() error {
 		}
 	}
 	if !fileExists(cli.localKubectlBinaryPath) {
+		log.Infof("can't found binary from %s, download from intenrnet...\n", cli.localKubectlBinaryPath)
 		// download kubectl
 		if err := downloadPlainBinary(cli.urlBinary.Kubectl, cli.localKubectlBinaryPath); err != nil {
 			return err
@@ -93,7 +95,6 @@ func downloadPlainBinary(sourceURL, localpath string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("%s: %d bytes downloaded\n", localpath, n)
 	return nil
 }
 
@@ -103,7 +104,7 @@ func (cli *CLI) ListClusters() ([]string, error) {
 		"get",
 		"clusters",
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -146,11 +147,33 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 		"--config",
 		kindConfigfile,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
 	return stdout.Stdout()
+}
+
+func (cli *CLI) InstallKubeflow(kfmanifestFile string) error {
+	cmdAndArgs := []string{
+		cli.localKubectlBinaryPath,
+		"apply",
+		"-f",
+		kfmanifestFile,
+	}
+	for {
+		log.Info("this command will keep retry for every 10s until it succeed.\n")
+		exitcode, stdout, err := cli.runCmd(cmdAndArgs)
+		if err != nil {
+			return err
+		}
+		stdout.Stdout()
+		if exitcode != 0 {
+			time.Sleep(10)
+		} else {
+			return nil
+		}
+	}
 }
 
 func (cli *CLI) RemoveCluster(clustername string) error {
@@ -161,7 +184,7 @@ func (cli *CLI) RemoveCluster(clustername string) error {
 		"--name",
 		clustername,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -174,14 +197,13 @@ type dockerState struct {
 }
 
 func (cli *CLI) GetClusterStatus(containername ContainerName) (string, error) {
-	// docker inspect host001-control-plane --format='{{json .State}}'
 	cmdAndArgs := []string{
 		"docker",
 		"inspect",
 		containername.Name(),
 		"--format='{{json .State}}'",
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -191,9 +213,6 @@ func (cli *CLI) GetClusterStatus(containername ContainerName) (string, error) {
 	if err := json.Unmarshal(stripped, &d); err != nil {
 		return "", err
 	}
-	//if err := json.NewDecoder(stdout).Decode(&d); err != nil {
-	//	return "", err
-	//}
 	return d.Status, nil
 }
 
@@ -206,7 +225,7 @@ func (cli *CLI) RemoteExec(containername ContainerName, cmd string) (resp string
 		"-c",
 		cmd,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -222,7 +241,7 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 		"--name",
 		clustername,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs, true)
+	_, stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -265,7 +284,7 @@ func (o *outputStream) Stdout() error {
 	return nil
 }
 
-func (cli *CLI) runCmd(cmdAndArgs []string, blocking bool) (*outputStream, error) {
+func (cli *CLI) runCmd(cmdAndArgs []string) (int, *outputStream, error) {
 	if cli.verbose {
 		log.Infof("cmdandargs:%s, blocking:%v\n", cmdAndArgs, blocking)
 	}
@@ -279,9 +298,7 @@ func (cli *CLI) runCmd(cmdAndArgs []string, blocking bool) (*outputStream, error
 	for stderrline := range runcmd.Stderr {
 		log.Infof("cli: %s\n", stderrline)
 	}
-	if blocking {
-		<-runStatus
-	}
+	stat := <-runStatus
 
-	return newOutputStream(runcmd.Stdout), nil
+	return stat.Exit, newOutputStream(runcmd.Stdout), nil
 }

@@ -1,6 +1,7 @@
 package host
 
 import (
+	kfmanifests "github.com/footprintai/multikind/kfmanifests"
 	hosttemplates "github.com/footprintai/multikind/pkg/machine/host/template"
 	templatefs "github.com/footprintai/multikind/pkg/template/fs"
 	//log "github.com/golang/glog"
@@ -21,7 +22,7 @@ func (h *HostFolder) GenerateFiles(tmplConfig *hosttemplates.TemplateFileConfig)
 	if err := memoryFileFs.Generate(tmplConfig, hosttemplates.NewKindTemplate()); err != nil {
 		return err
 	}
-	if err := h.folder.DumpFiles(memoryFileFs.FS()); err != nil {
+	if err := h.folder.DumpFiles(memoryFileFs.FS(), kfmanifests.FS); err != nil {
 		return err
 	}
 	return nil

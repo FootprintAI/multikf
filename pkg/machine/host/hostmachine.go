@@ -58,7 +58,7 @@ type HostMachine struct {
 
 func (h *HostMachine) ensureFiles() error {
 	f := filepath.Join(h.hostMachineDir, "kind-config.yaml")
-	if fileExists(f) {
+	if !fileExists(f) {
 		log.Infof("hostmachine(%s): prepare files under %s\n", h.name, h.hostMachineDir)
 		if err := h.prepareFiles(); err != nil {
 			return err
@@ -69,18 +69,13 @@ func (h *HostMachine) ensureFiles() error {
 }
 
 func (h *HostMachine) prepareFiles() error {
-	sshport, err := machine.FindFreeSSHPort()
-	if err != nil {
-		return err
-	}
 	kubeport, err := machine.FindFreeKubeApiPort()
 	if err != nil {
 		return err
 	}
-	log.Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", h.name, sshport, kubeport)
+	log.Infof("hostmachine(%s): get port (%d,%d) for ssh and kubeapi\n", h.name, kubeport)
 	tmplConfig := &template.TemplateFileConfig{
 		Name:        h.name,
-		SSHPort:     sshport,
 		KubeApiPort: kubeport,
 	}
 
@@ -104,7 +99,10 @@ func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
 		return err
 	}
 	//h.binary.Kind(fmt.Sprintf("create cluster --config %s"))
-	return h.cli.ProvisonCluster(filepath.Join(h.hostMachineDir, "kind-config.yaml"))
+	if err := h.cli.ProvisonCluster(filepath.Join(h.hostMachineDir, "kind-config.yaml")); err != nil {
+		return err
+	}
+	return h.cli.InstallKubeflow(filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml"))
 }
 
 func (h *HostMachine) ExportKubeConfig(path string, force bool) error {
