@@ -1,4 +1,4 @@
-BUILDDIR ?= "./out"
+BUILDDIR ?= "./build"
 BUILDTIME=$(shell date --rfc-3339=seconds)
 GITCOMMITID=$(shell git rev-parse HEAD)
 
