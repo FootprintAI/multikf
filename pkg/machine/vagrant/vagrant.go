@@ -114,6 +114,7 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 	return &machine.MachineInfo{
 		CpuInfo: cpuinfo,
 		MemInfo: meminfo,
+		GpuInfo: &machine.GpuInfo{},
 		Status:  status,
 	}, nil
 }

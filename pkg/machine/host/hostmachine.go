@@ -98,11 +98,27 @@ func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
 	if err := h.ensureFiles(); err != nil {
 		return err
 	}
-	//h.binary.Kind(fmt.Sprintf("create cluster --config %s"))
-	if err := h.cli.ProvisonCluster(filepath.Join(h.hostMachineDir, "kind-config.yaml")); err != nil {
+	kindConfigPath := filepath.Join(h.hostMachineDir, "kind-config.yaml")
+	kubeConfigPath := filepath.Join(h.hostMachineDir, "kubeconfig.yaml")
+	kfManifestPath := filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml")
+
+	if err := h.cli.ProvisonCluster(kindConfigPath); err != nil {
 		return err
 	}
-	return h.cli.InstallKubeflow(filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml"))
+	// install required pkgs
+	if err := h.cli.InstallRequiredPkgs(h.containername); err != nil {
+		return err
+	}
+	if err := h.cli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
+		return nil
+	}
+	if err := h.cli.InstallKubeflow(kubeConfigPath, kfManifestPath); err != nil {
+		return err
+	}
+	if err := h.cli.PatchKubeflow(kubeConfigPath); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *HostMachine) ExportKubeConfig(path string, force bool) error {
@@ -126,6 +142,11 @@ func (h *HostMachine) Info() (*machine.MachineInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	gpuinfo, err := machine.NewGpuInfoParserHelper(h.cli.RemoteExec(h.containername, "/usr/bin/nvidia-smi -x -q -a"))
+	if err != nil {
+		log.Errorf("host: get cpu info failed, err:%s\n", err)
+		gpuinfo = &machine.GpuInfo{}
+	}
 	status, err := h.cli.GetClusterStatus(h.containername)
 	if err != nil {
 		return nil, err
@@ -133,6 +154,7 @@ func (h *HostMachine) Info() (*machine.MachineInfo, error) {
 	return &machine.MachineInfo{
 		CpuInfo: cpuinfo,
 		MemInfo: meminfo,
+		GpuInfo: gpuinfo,
 		Status:  status,
 	}, nil
 }

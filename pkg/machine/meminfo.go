@@ -40,16 +40,18 @@ func NewMemInfoParser(str string) (*MemInfo, error) {
 }
 
 type MemInfo struct {
-	free    uint32
+	free    uint32 // in kB
 	cached  uint32
 	buffers uint32
 	total   uint32
 }
 
-func (m *MemInfo) Free() uint32 {
-	return m.free
+const bytesInM = 1024
+
+func (m *MemInfo) Free() string {
+	return fmt.Sprintf("%.2f Mib", float64(m.free)/bytesInM)
 }
 
-func (m *MemInfo) Total() uint32 {
-	return m.total
+func (m *MemInfo) Total() string {
+	return fmt.Sprintf("%.2f Mib", float64(m.total)/bytesInM)
 }

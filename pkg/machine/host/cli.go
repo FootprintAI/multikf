@@ -1,6 +1,7 @@
 package host
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -106,7 +107,7 @@ func (cli *CLI) ListClusters() ([]string, error) {
 		"get",
 		"clusters",
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -124,19 +125,18 @@ func (cli *CLI) ListClusters() ([]string, error) {
 }
 
 func readall(r io.Reader) ([]byte, error) {
-	b := make([]byte, 0, 1024*1024*10 /*10M buffer*/)
+	buf := &bytes.Buffer{}
+	b := make([]byte, 1024*1024*10 /*10M buffer*/)
 	for {
-		if len(b) == cap(b) {
-			// Add more capacity (let append pick how much).
-			b = append(b, 0)[:len(b)]
-		}
-		n, err := r.Read(b[len(b):cap(b)])
-		b = b[:len(b)+n]
-		if err != nil {
+		n, err := r.Read(b)
+		if err == nil {
+			buf.Write(b[:n])
+		} else {
 			if err == io.EOF {
-				err = nil
+				return buf.Bytes(), nil
+			} else {
+				return nil, err
 			}
-			return b, err
 		}
 	}
 }
@@ -149,33 +149,79 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 		"--config",
 		kindConfigfile,
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
 	return stdout.Stdout()
 }
 
-func (cli *CLI) InstallKubeflow(kfmanifestFile string) error {
+func (cli *CLI) InstallRequiredPkgs(containername ContainerName) error {
+	// TODO: check whether we have to install gpu related pkg
+	//_, err := cli.RemoteExec(containername, "apt-get update && apt-get install -y pciutils")
+	//if err != nil {
+	//	log.Error("cli: failed on install required pkg, err:%v\n", err)
+	//}
+	//cli.RemoteExec(containername, "lspci  | grep -i nvidia")
+	return nil
+}
+
+func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) error {
 	cmdAndArgs := []string{
 		cli.localKubectlBinaryPath,
 		"apply",
 		"-f",
 		kfmanifestFile,
+		"--kubeconfig",
+		kubeConfigFile,
 	}
-	for {
-		log.Info("this command will keep retry for every 10s until it succeed.\n")
-		exitcode, stdout, err := cli.runCmd(cmdAndArgs)
+	log.Info("this command will keep retry 2 times for every 30s.\n")
+	for i := 0; i < 3; i++ {
+		stdout, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
 			return err
 		}
 		stdout.Stdout()
-		if exitcode != 0 {
-			time.Sleep(10)
-		} else {
-			return nil
-		}
+		time.Sleep(30 * time.Second)
 	}
+	return nil
+}
+
+func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
+	multiCmdAndArgs := [][]string{
+		[]string{
+			cli.localKubectlBinaryPath,
+			"patch",
+			"configmap",
+			"workflow-controller-configmap",
+			"--patch",
+			"{\"data\":{\"containerRuntimeExecutor\":\"emissary\"}}",
+			"-n",
+			"kubeflow",
+			"--kubeconfig",
+			kubeConfigFile,
+		},
+		[]string{
+			cli.localKubectlBinaryPath,
+			"rollout",
+			"restart",
+			"deployment/workflow-controller",
+			"-n",
+			"kubeflow",
+			"--kubeconfig",
+			kubeConfigFile,
+		},
+	}
+	for _, cmdAndArgs := range multiCmdAndArgs {
+		stdout, err := cli.runCmd(cmdAndArgs)
+		if err != nil {
+			return err
+		}
+		stdout.Stdout()
+		time.Sleep(3 * time.Second)
+
+	}
+	return nil
 }
 
 func (cli *CLI) RemoveCluster(clustername string) error {
@@ -186,7 +232,7 @@ func (cli *CLI) RemoveCluster(clustername string) error {
 		"--name",
 		clustername,
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -205,7 +251,7 @@ func (cli *CLI) GetClusterStatus(containername ContainerName) (string, error) {
 		containername.Name(),
 		"--format='{{json .State}}'",
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -227,7 +273,7 @@ func (cli *CLI) RemoteExec(containername ContainerName, cmd string) (resp string
 		"-c",
 		cmd,
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -243,7 +289,7 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 		"--name",
 		clustername,
 	}
-	_, stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -285,7 +331,7 @@ func (o *outputStream) Stdout() error {
 	return nil
 }
 
-func (cli *CLI) runCmd(cmdAndArgs []string) (int, *outputStream, error) {
+func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, error) {
 	if cli.verbose {
 		log.Infof("cmdandargs:%s\n", cmdAndArgs)
 	}
@@ -294,12 +340,12 @@ func (cli *CLI) runCmd(cmdAndArgs []string) (int, *outputStream, error) {
 		Streaming: true,
 	}
 	runcmd := cmd.NewCmdOptions(cmdOptions, cmdAndArgs[0], cmdAndArgs[1:]...)
-	runStatus := runcmd.Start()
+	runcmd.Start()
 	// run and output stderr
 	for stderrline := range runcmd.Stderr {
 		log.Infof("cli: %s\n", stderrline)
 	}
-	stat := <-runStatus
+	//stat := <-runStatus
 
-	return stat.Exit, newOutputStream(runcmd.Stdout), nil
+	return newOutputStream(runcmd.Stdout), nil
 }

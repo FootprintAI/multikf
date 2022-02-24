@@ -6,24 +6,26 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/golang/glog"
+	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
+
 	"github.com/footprintai/multikind/pkg/machine"
 	_ "github.com/footprintai/multikind/pkg/machine/host"
 	_ "github.com/footprintai/multikind/pkg/machine/vagrant"
 	"github.com/footprintai/multikind/pkg/version"
-	log "github.com/golang/glog"
-	"github.com/spf13/cobra"
 )
 
 var (
-	cpus           int    // number of cpus allocated to the vagrant
-	memoryInG      int    // number of Gigabytes allocated to the vagrant
+	cpus           int    // number of cpus allocated to the geust machine
+	memoryInG      int    // number of Gigabytes allocated to the guest machine
 	provisionerStr string // provider specifies the underly privisoner for virtual machine, either docker (under host) or vagrant
-	guestRootDir   string // root dir which containing multiple guest machines, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.vagrant)
+	guestRootDir   string // root dir which containing multiple guest machines, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.multilind)
 	forceDelete    bool   // force to deleted the instance (default: false)
 	forceCreate    bool   // force to create the instance regardless the instance's status (default: false)
 	forceOverwrite bool   // force to overwrite the existing kubeconf file
 	verbose        bool   // verbose (default: true)
-	kubeconfigPath string // kubeconfig path of a vagrant machine (default: ./.vagrant/$machine/kubeconfig)
+	kubeconfigPath string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
 
 	rootCmd = &cobra.Command{
 		Use:   "multikind",
@@ -161,6 +163,8 @@ type OutputMachineInfo struct {
 	MachineDir string `json:"dir"`
 	Status     string `json:"status"`
 	Cpus       string `json:"cpus"`
+	Gpus       string `json:"gpus"`
+	KubeApi    string `json:"kubeAPI"`
 	Memory     string `json:"memory"`
 }
 
@@ -169,6 +173,8 @@ func (o *OutputMachineInfo) Headers() []string {
 		"name",
 		"dir",
 		"status",
+		"gpus",
+		"kubeAPI",
 		"cpus",
 		"memory",
 	}
@@ -179,6 +185,8 @@ func (o *OutputMachineInfo) Values() []string {
 		o.Name,
 		o.MachineDir,
 		o.Status,
+		o.Gpus,
+		o.KubeApi,
 		o.Cpus,
 		o.Memory,
 	}
@@ -202,8 +210,10 @@ func (r *runCmd) List() error {
 			Name:       m.Name(),
 			MachineDir: m.HostDir(),
 			Status:     info.Status,
+			Gpus:       fmt.Sprintf("%s", info.GpuInfo.Info()),
+			KubeApi:    info.KubeApi,
 			Cpus:       fmt.Sprintf("%d", info.CpuInfo.NumCPUs()),
-			Memory:     fmt.Sprintf("%d/%d", info.MemInfo.Free(), info.MemInfo.Total()),
+			Memory:     fmt.Sprintf("%s/%s", info.MemInfo.Free(), info.MemInfo.Total()),
 		}
 	}
 
@@ -227,13 +237,15 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(exportCmd)
 
-	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".vagrant", "vagrant root dir")
+	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikind", "multikind root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")
 	rootCmd.PersistentFlags().StringVar(&provisionerStr, "provisioner", "docker", "provisioner, possible value: docker and vagrant")
-	addCmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the vagrant")
-	addCmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the vagrant")
+	addCmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the guest machine")
+	addCmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	addCmd.Flags().BoolVar(&forceCreate, "f", false, "force to create instance regardless the machine status")
-	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove vagrant instance")
-	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove vagrant instance")
+	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
+	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")
+
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }

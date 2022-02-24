@@ -23,5 +23,7 @@ type MachineCURD interface {
 type MachineInfo struct {
 	CpuInfo *CpuInfo
 	MemInfo *MemInfo
+	GpuInfo *GpuInfo
+	KubeApi string
 	Status  string
 }
