@@ -7,6 +7,15 @@ Multi-Kind leverages [Vagrant](https://github.com/hashicorp/vagrant) and [Kind](
 As a machine gets more powerful, it is such a waste to have it running just one Kubernetes, especially for the applications which require only a local Kubernetes for practice. One example is our [Kubeflow workshop](https://github.com/footprintai/kubeflow-workshop).
 To fully utilize hardware resources, we leverage vagrant to construct a fully isolated environment and install required packages on it (e.g. Kubernetes and Kubeflow and more ...), map ports for kubeApi and ssh, and also export its kubeconfg to host. Therefore, users on the host machine can easily talk to the guest Kube-API via kubectl.
 
+#### When we need this?
+
+We expected the user are under:
+
+- Windows environemnt with docker desktop installed
+- Linux environment
+
+and this tool provides abstractions for them to operate clusters.
+
 #### Why Vagrant is required?
 
 Idealy, we could just use Kind which running as a container to provide resource isolation. However, Kind was unable to isolate resources from its underlying kubelet(see [issue](https://github.com/kubernetes-sigs/kind/issues/877)) due to kubelet's implementation. Thus, Vagrant is served as a resource isolation and provide clean guest enviornment.
@@ -57,3 +66,15 @@ Fields listed here is on our roadmap.
 | Cpu Isolation | O |
 | Memory Isolation | O |
 | GPU Isolation | X |
+
+
+#### Gpu Passthough
+
+For passing gpu to docker container, one approach is to use `--gpus=all` when you launched docker container like
+
+```
+docker run -it --gpus=all ubuntu:21.10 /bin/bash
+
+```
+where it relies on the host's cuda driver.
+However, Kind are NOT supported this approach, see [issue](https://github.com/kubernetes-sigs/kind/pull/1886)
