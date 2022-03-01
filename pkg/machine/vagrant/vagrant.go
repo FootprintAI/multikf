@@ -1,6 +1,7 @@
 package vagrant
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,23 +10,26 @@ import (
 	vagrantclient "github.com/footprintai/multikind/pkg/client/vagrant"
 	machine "github.com/footprintai/multikind/pkg/machine"
 	"github.com/footprintai/multikind/pkg/machine/vagrant/template"
-	log "github.com/golang/glog"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
-func NewVagrantMachines(vagrantDir string, verbose bool) machine.MachinesCURD {
+func NewVagrantMachines(logger log.Logger, vagrantDir string, verbose bool) machine.MachinesCURD {
 	return &VagrantMachines{
+		logger:     logger,
 		vagrantDir: vagrantDir,
 		verbose:    verbose,
 	}
 }
 
 type VagrantMachines struct {
+	logger     log.Logger
 	vagrantDir string
 	verbose    bool
 }
 
 func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfiger) (machine.MachineCURD, error) {
 	return &VagrantMachine{
+		logger:            vm.logger,
 		name:              name,
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
@@ -37,6 +41,7 @@ func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfig
 }
 
 type VagrantMachine struct {
+	logger            log.Logger
 	name              string
 	vagrantMachineDir string
 	verbose           bool
@@ -59,7 +64,7 @@ func (v *VagrantMachine) Up(forceDeleteIfNecessary bool) error {
 	if err := v.ensureVagrantFiles(); err != nil {
 		return err
 	}
-	log.Infof("vagrantmachine(%s): ready to launch machine\n", v.name)
+	v.logger.V(0).Infof("vagrantmachine(%s): ready to launch machine\n", v.name)
 	cli, err := v.NewVagrantCli()
 	if err != nil {
 		return err
@@ -80,7 +85,7 @@ func (v *VagrantMachine) ExportKubeConfig(path string, force bool) error {
 	if fileExists && !force {
 		return fmt.Errorf("kubecfg %s exists, use -f to overwrite it\n", path)
 	}
-	log.Infof("vagrantmachine(%s): export kubecfg to path:%s\n", v.name, path)
+	v.logger.V(0).Infof("vagrantmachine(%s): export kubecfg to path:%s\n", v.name, path)
 	cli, err := v.NewVagrantCli()
 	if err != nil {
 		return err
@@ -89,7 +94,7 @@ func (v *VagrantMachine) ExportKubeConfig(path string, force bool) error {
 }
 
 func (v *VagrantMachine) Destroy(force bool) error {
-	log.Infof("vagrantmachine(%s): ready to destroy\n", v.name)
+	v.logger.V(0).Infof("vagrantmachine(%s): ready to destroy\n", v.name)
 	cli, err := v.NewVagrantCli()
 	if err != nil {
 		return err
@@ -119,6 +124,10 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 	}, nil
 }
 
+func (v *VagrantMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
+	return 0, errors.New("todo")
+}
+
 func (v *VagrantMachine) Name() string {
 	return v.name
 }
@@ -127,7 +136,7 @@ func (v *VagrantMachine) ensureVagrantFiles() error {
 	// only check Vagrantfile
 	f := filepath.Join(v.vagrantMachineDir, "Vagrantfile")
 	if _, err := os.Stat(f); os.IsNotExist(err) {
-		log.Infof("vagrantmachine(%s): prepare files under %s\n", v.name, v.vagrantMachineDir)
+		v.logger.V(0).Infof("vagrantmachine(%s): prepare files under %s\n", v.name, v.vagrantMachineDir)
 		if err := v.prepareFiles(); err != nil {
 			return err
 		}
@@ -146,7 +155,7 @@ func (v *VagrantMachine) prepareFiles() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", v.name, sshport, kubeport)
+	v.logger.V(0).Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", v.name, sshport, kubeport)
 	tmplConfig := &template.TemplateFileConfig{
 		Name:        v.name,
 		CPUs:        v.config.CPUs,
