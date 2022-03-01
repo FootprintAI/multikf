@@ -3,6 +3,8 @@ package machine
 import (
 	"errors"
 	"fmt"
+
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type Provisioner string
@@ -24,15 +26,15 @@ const (
 	Unknwon Provisioner = "unknown"
 )
 
-func NewMachineFactory(provisioner Provisioner, dir string, verbose bool) (MachinesCURD, error) {
+func NewMachineFactory(provisioner Provisioner, logger log.Logger, dir string, verbose bool) (MachinesCURD, error) {
 	fac, found := provisionerRegister[provisioner]
 	if !found {
 		return nil, fmt.Errorf("provisioner:%s is not found\n", provisioner)
 	}
-	return fac(dir, verbose), nil
+	return fac(logger, dir, verbose), nil
 }
 
-type FactoryFunc func(dir string, verbose bool) MachinesCURD
+type FactoryFunc func(logger log.Logger, dir string, verbose bool) MachinesCURD
 
 var provisionerRegister = map[Provisioner]FactoryFunc{}
 

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/go-cmd/cmd"
-	log "github.com/golang/glog"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type urlBinary struct {
@@ -23,7 +23,7 @@ type urlBinary struct {
 	Kubectl string
 }
 
-func NewCLI(binpath string, verbose bool) (*CLI, error) {
+func NewCLI(logger log.Logger, binpath string, verbose bool) (*CLI, error) {
 	if binpath == "" {
 		binpath = os.TempDir()
 	}
@@ -31,6 +31,7 @@ func NewCLI(binpath string, verbose bool) (*CLI, error) {
 		return nil, err
 	}
 	cli := &CLI{
+		logger:                 logger,
 		verbose:                verbose,
 		localKindBinaryPath:    filepath.Join(binpath, "kind"),
 		localKubectlBinaryPath: filepath.Join(binpath, "kubectl"),
@@ -43,6 +44,7 @@ func NewCLI(binpath string, verbose bool) (*CLI, error) {
 }
 
 type CLI struct {
+	logger                 log.Logger
 	verbose                bool
 	localKindBinaryPath    string
 	localKubectlBinaryPath string
@@ -51,7 +53,7 @@ type CLI struct {
 
 func (cli *CLI) ensureBinaries() error {
 	if !fileExists(cli.localKindBinaryPath) {
-		log.Infof("can't found binary from %s, download from intenrnet...\n", cli.localKindBinaryPath)
+		cli.logger.V(0).Infof("can't found binary from %s, download from intenrnet...\n", cli.localKindBinaryPath)
 		// download kind
 		if err := downloadPlainBinary(cli.urlBinary.Kind, cli.localKindBinaryPath); err != nil {
 			return err
@@ -62,7 +64,7 @@ func (cli *CLI) ensureBinaries() error {
 		}
 	}
 	if !fileExists(cli.localKubectlBinaryPath) {
-		log.Infof("can't found binary from %s, download from intenrnet...\n", cli.localKubectlBinaryPath)
+		cli.logger.V(0).Infof("can't found binary from %s, download from intenrnet...\n", cli.localKubectlBinaryPath)
 		// download kubectl
 		if err := downloadPlainBinary(cli.urlBinary.Kubectl, cli.localKubectlBinaryPath); err != nil {
 			return err
@@ -175,7 +177,7 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 		"--kubeconfig",
 		kubeConfigFile,
 	}
-	log.Info("this command will keep retry 2 times for every 30s.\n")
+	cli.logger.V(0).Info("this command will keep retry 2 times for every 30s.\n")
 	for i := 0; i < 3; i++ {
 		stdout, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
@@ -225,13 +227,14 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 }
 
 func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toPort int) error {
+	// TODO: auto reconnect
 	cmdAndArgs := []string{
 		cli.localKubectlBinaryPath,
 		"port-forward",
-		fmt.Sprintf("svc/%s", svc),
+		svc,
 		"-n",
 		namespace,
-		fmt.Sprintf("%d:%d", fromPort, toPort),
+		fmt.Sprintf("%d:%d", toPort, fromPort),
 		"--kubeconfig",
 		kubeConfigFile,
 	}
@@ -320,11 +323,12 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 
 // outputStream implements io.Reader by wrapping the line channel
 type outputStream struct {
-	ch chan string
+	logger log.Logger
+	ch     chan string
 }
 
-func newOutputStream(ch chan string) *outputStream {
-	return &outputStream{ch: ch}
+func newOutputStream(logger log.Logger, ch chan string) *outputStream {
+	return &outputStream{ch: ch, logger: logger}
 }
 
 func (o *outputStream) Read(b []byte) (int, error) {
@@ -345,13 +349,13 @@ func (o *outputStream) Stdout() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("cli: %s\n", string(all))
+	o.logger.V(0).Infof("%s\n", string(all))
 	return nil
 }
 
 func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, error) {
 	if cli.verbose {
-		log.Infof("cmdandargs:%s\n", cmdAndArgs)
+		cli.logger.V(0).Infof("cmd->%s\n", cmdAndArgs)
 	}
 	cmdOptions := cmd.Options{
 		Buffered:  false,
@@ -361,9 +365,9 @@ func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, error) {
 	runcmd.Start()
 	// run and output stderr
 	for stderrline := range runcmd.Stderr {
-		log.Infof("cli: %s\n", stderrline)
+		cli.logger.V(1).Infof("%s\n", stderrline)
 	}
 	//stat := <-runStatus
 
-	return newOutputStream(runcmd.Stdout), nil
+	return newOutputStream(cli.logger, runcmd.Stdout), nil
 }

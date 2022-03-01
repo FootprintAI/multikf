@@ -1,14 +1,16 @@
 package multikind
 
 import (
+	"errors"
 	goflag "flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	log "github.com/golang/glog"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"github.com/footprintai/multikind/pkg/machine"
 	_ "github.com/footprintai/multikind/pkg/machine/host"
@@ -81,15 +83,18 @@ var (
 	}
 	kubeflowCmd = &cobra.Command{
 		Use:   "kubeflow command",
-		Short: "kubeflow command line",
+		Short: "kubeflow command",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("failed to recognize cluster name")
+			}
+			run := mustNewRunCmd()
+			return run.ConnectKubeflow(args[0])
+		},
 	}
 	connectCmd = &cobra.Command{
 		Use:   "connect",
 		Short: "connect",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			run := mustNewRunCmd()
-			return run.ConnectKubeflow(args[0])
-		},
 	}
 )
 
@@ -106,15 +111,18 @@ func newRunCmd() (*runCmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	vag, err := machine.NewMachineFactory(p, guestRootDir, verbose)
+	logger := cmd.NewLogger()
+
+	vag, err := machine.NewMachineFactory(p, logger, guestRootDir, verbose)
 	if err != nil {
 		return nil, err
 	}
-	return &runCmd{vag: vag}, nil
+	return &runCmd{vag: vag, logger: logger}, nil
 }
 
 type runCmd struct {
-	vag machine.MachinesCURD
+	vag    machine.MachinesCURD
+	logger log.Logger
 }
 
 type machineConfig struct {
@@ -136,7 +144,7 @@ func (r *runCmd) Add(name string, cpus, memoryInG int) error {
 		return err
 	}
 	if err := m.Up(forceCreate); err != nil {
-		log.Errorf("runcmd: add node (%s) failed, err:%+v\n", name, err)
+		r.logger.Errorf("runcmd: add node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -151,7 +159,7 @@ func (r *runCmd) Export(name string, path string) error {
 		return err
 	}
 	if err := m.ExportKubeConfig(path, forceOverwrite); err != nil {
-		log.Errorf("runcmd: export node (%s) failed, err:%+v\n", name, err)
+		r.logger.Errorf("runcmd: export node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -163,7 +171,7 @@ func (r *runCmd) Delete(name string) error {
 		return err
 	}
 	if err := m.Destroy(forceDelete); err != nil {
-		log.Errorf("runcmd: delete node (%s) failed, err:%+v\n", name, err)
+		r.logger.Errorf("runcmd: delete node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -241,18 +249,15 @@ func (r *runCmd) ConnectKubeflow(name string) error {
 	if err != nil {
 		return err
 	}
-	destPort, err := m.Portforward("svc/istio-ingressgateway", "istio-system", 80)
+	_, err = m.Portforward("svc/istio-ingressgateway", "istio-system", 80)
 	if err != nil {
-		log.Errorf("runcmd: unable to connect %s failed, err:%+v\n", name, err)
+		r.logger.Errorf("runcmd: unable to connect %s failed, err:%+v\n", name, err)
 		return err
 	}
-	log.Infof("now open http://localhost:%d", destPort)
 	return nil
 }
 
 func Main() {
-	defer log.Flush()
-
 	rootCmd.Execute()
 }
 
@@ -262,8 +267,8 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(exportCmd)
-	rootCmd.AddCommand(kubeflowCmd)
-	kubeflowCmd.AddCommand(connectCmd)
+	rootCmd.AddCommand(connectCmd)
+	connectCmd.AddCommand(kubeflowCmd)
 
 	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikind", "multikind root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")
