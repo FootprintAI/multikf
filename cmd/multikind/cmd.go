@@ -47,7 +47,7 @@ var (
 	}
 
 	exportCmd = &cobra.Command{
-		Use:   "export",
+		Use:   "export <machine-name>",
 		Short: "export kubeconfig from a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
@@ -56,7 +56,7 @@ var (
 	}
 
 	addCmd = &cobra.Command{
-		Use:   "add",
+		Use:   "add <machine-name>",
 		Short: "add a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
@@ -64,7 +64,7 @@ var (
 		},
 	}
 	deleteCmd = &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <machine-name>",
 		Short: "delete a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
@@ -77,6 +77,18 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
 			return run.List()
+		},
+	}
+	kubeflowCmd = &cobra.Command{
+		Use:   "kubeflow command",
+		Short: "kubeflow command line",
+	}
+	connectCmd = &cobra.Command{
+		Use:   "connect",
+		Short: "connect",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			run := mustNewRunCmd()
+			return run.ConnectKubeflow(args[0])
 		},
 	}
 )
@@ -124,7 +136,7 @@ func (r *runCmd) Add(name string, cpus, memoryInG int) error {
 		return err
 	}
 	if err := m.Up(forceCreate); err != nil {
-		log.Errorf("runcmd: add vagrant node (%s) failed, err:%+v\n", name, err)
+		log.Errorf("runcmd: add node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -139,7 +151,7 @@ func (r *runCmd) Export(name string, path string) error {
 		return err
 	}
 	if err := m.ExportKubeConfig(path, forceOverwrite); err != nil {
-		log.Errorf("runcmd: export vagrant node (%s) failed, err:%+v\n", name, err)
+		log.Errorf("runcmd: export node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -151,7 +163,7 @@ func (r *runCmd) Delete(name string) error {
 		return err
 	}
 	if err := m.Destroy(forceDelete); err != nil {
-		log.Errorf("runcmd: delete vagrant node (%s) failed, err:%+v\n", name, err)
+		log.Errorf("runcmd: delete node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
 	return nil
@@ -224,6 +236,20 @@ func (r *runCmd) List() error {
 	return w.WriteAndClose(dummyRow.Headers(), csvValues)
 }
 
+func (r *runCmd) ConnectKubeflow(name string) error {
+	m, err := r.vag.NewMachine(name, nil)
+	if err != nil {
+		return err
+	}
+	destPort, err := m.Portforward("svc/istio-ingressgateway", "istio-system", 80)
+	if err != nil {
+		log.Errorf("runcmd: unable to connect %s failed, err:%+v\n", name, err)
+		return err
+	}
+	log.Infof("now open http://localhost:%d", destPort)
+	return nil
+}
+
 func Main() {
 	defer log.Flush()
 
@@ -236,6 +262,8 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(exportCmd)
+	rootCmd.AddCommand(kubeflowCmd)
+	kubeflowCmd.AddCommand(connectCmd)
 
 	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikind", "multikind root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")

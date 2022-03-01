@@ -1,6 +1,7 @@
 package vagrant
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -117,6 +118,10 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 		GpuInfo: &machine.GpuInfo{},
 		Status:  status,
 	}, nil
+}
+
+func (v *VagrantMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
+	return 0, errors.New("todo")
 }
 
 func (v *VagrantMachine) Name() string {

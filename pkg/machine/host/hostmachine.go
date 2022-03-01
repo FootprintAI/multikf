@@ -30,6 +30,7 @@ func (hm *HostMachines) NewMachine(name string, options machine.MachineConfiger)
 		containername:  NewContainerName(name),
 		hostMachineDir: filepath.Join(hm.hostDir, name),
 		verbose:        hm.verbose,
+		kubeconfig:     filepath.Join(hm.hostDir, name, "kubeconfig.yaml"),
 		cli:            hm.cli,
 	}, nil
 }
@@ -52,6 +53,7 @@ type HostMachine struct {
 	containername  ContainerName
 	hostMachineDir string
 	verbose        bool
+	kubeconfig     string // filepath to kubeconfig
 
 	cli *CLI
 }
@@ -101,6 +103,7 @@ func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
 	kindConfigPath := filepath.Join(h.hostMachineDir, "kind-config.yaml")
 	kubeConfigPath := filepath.Join(h.hostMachineDir, "kubeconfig.yaml")
 	kfManifestPath := filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml")
+	log.Infof("[docker] check %s for kubeconfig.yaml\n", kubeConfigPath)
 
 	if err := h.cli.ProvisonCluster(kindConfigPath); err != nil {
 		return err
@@ -110,13 +113,20 @@ func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
 		return err
 	}
 	if err := h.cli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
-		return nil
+		return err
 	}
 	if err := h.cli.InstallKubeflow(kubeConfigPath, kfManifestPath); err != nil {
 		return err
 	}
 	if err := h.cli.PatchKubeflow(kubeConfigPath); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (h *HostMachine) ensureKubeconfig() error {
+	if !fileExists(h.kubeconfig) {
+		return h.cli.GetKubeConfig(h.name, h.kubeconfig)
 	}
 	return nil
 }
@@ -157,4 +167,15 @@ func (h *HostMachine) Info() (*machine.MachineInfo, error) {
 		GpuInfo: gpuinfo,
 		Status:  status,
 	}, nil
+}
+
+func (h *HostMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
+	if err := h.ensureKubeconfig(); err != nil {
+		return 0, err
+	}
+	destPort, err := machine.FindFreePort()
+	if err != nil {
+		return 0, err
+	}
+	return destPort, h.cli.Portforward(h.kubeconfig, svc, namespace, fromPort, destPort)
 }

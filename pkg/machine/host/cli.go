@@ -224,6 +224,24 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 	return nil
 }
 
+func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toPort int) error {
+	cmdAndArgs := []string{
+		cli.localKubectlBinaryPath,
+		"port-forward",
+		fmt.Sprintf("svc/%s", svc),
+		"-n",
+		namespace,
+		fmt.Sprintf("%d:%d", fromPort, toPort),
+		"--kubeconfig",
+		kubeConfigFile,
+	}
+	stdout, err := cli.runCmd(cmdAndArgs)
+	if err != nil {
+		return err
+	}
+	return stdout.Stdout()
+}
+
 func (cli *CLI) RemoveCluster(clustername string) error {
 	cmdAndArgs := []string{
 		cli.localKindBinaryPath,

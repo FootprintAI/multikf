@@ -18,6 +18,7 @@ type MachineCURD interface {
 	Destroy(force bool) error
 	Info() (*MachineInfo, error)
 	ExportKubeConfig(path string, forceOverwrite bool) error
+	Portforward(svc, namespace string, fromPort int) (int, error)
 }
 
 type MachineInfo struct {

@@ -16,7 +16,7 @@ func FindFreeSSHPort() (int, error) {
 			return 0, errors.New("no available port")
 		}
 		log.Infof("sshport: try %d\n", start)
-		if err := isPortAvaialble(start); err == nil {
+		if _, err := isPortAvaialble(start); err == nil {
 			log.Infof("sshport: found %d\n", start)
 			return start, nil
 		}
@@ -32,7 +32,7 @@ func FindFreeKubeApiPort() (int, error) {
 			return 0, errors.New("no available port")
 		}
 		log.Infof("kubeapiport: try %d\n", start)
-		if err := isPortAvaialble(start); err == nil {
+		if _, err := isPortAvaialble(start); err == nil {
 			log.Infof("kubeapiport: found %d\n", start)
 			return start, nil
 		}
@@ -40,12 +40,16 @@ func FindFreeKubeApiPort() (int, error) {
 	}
 }
 
-func isPortAvaialble(port int) error {
+func FindFreePort() (int, error) {
+	return isPortAvaialble(0 /*0 for any port*/)
+}
+
+func isPortAvaialble(port int) (int, error) {
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", port))
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	l.Close()
-	return nil
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
