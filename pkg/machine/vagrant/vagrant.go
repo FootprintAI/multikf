@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	vagrantclient "github.com/footprintai/multikind/pkg/client/vagrant"
-	machine "github.com/footprintai/multikind/pkg/machine"
-	"github.com/footprintai/multikind/pkg/machine/vagrant/template"
+	vagrantclient "github.com/footprintai/multikf/pkg/client/vagrant"
+	machine "github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"sigs.k8s.io/kind/pkg/log"
 )
 

@@ -1,4 +1,4 @@
-module github.com/footprintai/multikind
+module github.com/footprintai/multikf
 
 go 1.17
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	machine "github.com/footprintai/multikind/pkg/machine"
-	"github.com/footprintai/multikind/pkg/machine/host/template"
+	machine "github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/machine/host/template"
 	"sigs.k8s.io/kind/pkg/log"
 )
 

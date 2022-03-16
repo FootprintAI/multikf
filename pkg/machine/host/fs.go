@@ -1,9 +1,9 @@
 package host
 
 import (
-	kfmanifests "github.com/footprintai/multikind/kfmanifests"
-	hosttemplates "github.com/footprintai/multikind/pkg/machine/host/template"
-	templatefs "github.com/footprintai/multikind/pkg/template/fs"
+	kfmanifests "github.com/footprintai/multikf/kfmanifests"
+	hosttemplates "github.com/footprintai/multikf/pkg/machine/host/template"
+	templatefs "github.com/footprintai/multikf/pkg/template/fs"
 	//log "github.com/golang/glog"
 )
 

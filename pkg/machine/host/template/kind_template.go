@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"io"
 
-	pkgtemplate "github.com/footprintai/multikind/pkg/template"
+	pkgtemplate "github.com/footprintai/multikf/pkg/template"
 )
 
 func NewKindTemplate() *KindFileTemplate {

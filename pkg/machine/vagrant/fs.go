@@ -1,9 +1,9 @@
 package vagrant
 
 import (
-	"github.com/footprintai/multikind/assets"
-	vagranttemplates "github.com/footprintai/multikind/pkg/machine/vagrant/template"
-	templatefs "github.com/footprintai/multikind/pkg/template/fs"
+	"github.com/footprintai/multikf/assets"
+	vagranttemplates "github.com/footprintai/multikf/pkg/machine/vagrant/template"
+	templatefs "github.com/footprintai/multikf/pkg/template/fs"
 	//log "github.com/golang/glog"
 )
 

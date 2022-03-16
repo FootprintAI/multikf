@@ -1,5 +1,5 @@
-# multikind
-Multi-Kind leverages [Vagrant](https://github.com/hashicorp/vagrant) and [Kind](https://github.com/kubernetes-sigs/kind) (Kubernetes In Docker) to create multiple local clusters inside the same host machine, see the following png for simple layout
+# multikf
+Multi-Kind leverages [Vagrant](https://github.com/hashicorp/vagrant) and [Kind](https://github.com/kubernetes-sigs/kind) (Kubernetes In Docker) to create multiple local kubernetes and kubeflow clusters inside the same host machine, see the following png for simple layout
 ![flow](./images/intro.png)
 
 #### Why we need this?
@@ -25,12 +25,12 @@ Idealy, we could just use Kind which running as a container to provide resource 
 ##### Add a vagrant machine named test000 with 1 cpu and 1G memory.
 
 ```
-./multikind add test000 --cpu 1 --memory 1
+./multikf add test000 --cpu 1 --memory 1
 ```
 
 ##### Export a vargant machine's kubeconfig
 ```
-./multikind export test000 --kubeconfig_path /tmp/test000.kubeconfig
+./multikf export test000 --kubeconfig_path /tmp/test000.kubeconfig
 
 run kubectl from host
 
@@ -41,7 +41,7 @@ run kubectl from host
 ##### list machines
 
 ```
-./multikind list
+./multikf list
 
 +---------+------------------+---------+------+---------------+
 |  NAME   |       DIR        | STATUS  | CPUS |    MEMORY     |
@@ -53,7 +53,14 @@ run kubectl from host
 ##### delete a machine
 
 ```
-./multikind delete test000
+./multikf delete test000
+
+```
+
+#### connect a machine
+
+```
+./multikf connect kubeflow test000
 
 ```
 

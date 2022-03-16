@@ -3,7 +3,7 @@ package machine
 import (
 	"testing"
 
-	"github.com/footprintai/multikind/pkg/machine/testdata"
+	"github.com/footprintai/multikf/pkg/machine/testdata"
 	"github.com/stretchr/testify/assert"
 )
 

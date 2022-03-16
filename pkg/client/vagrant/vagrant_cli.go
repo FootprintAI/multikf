@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	govagrant "github.com/bmatcuk/go-vagrant"
-	fssh "github.com/footprintai/multikind/pkg/ssh"
+	fssh "github.com/footprintai/multikf/pkg/ssh"
 	log "github.com/golang/glog"
 	"golang.org/x/crypto/ssh"
 )

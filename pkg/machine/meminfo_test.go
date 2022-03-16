@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/footprintai/multikind/pkg/machine/testdata"
+	"github.com/footprintai/multikf/pkg/machine/testdata"
 )
 
 func TestMemInfo(t *testing.T) {

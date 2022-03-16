@@ -1,7 +1,7 @@
 package vagrant
 
 import (
-	machine "github.com/footprintai/multikind/pkg/machine"
+	machine "github.com/footprintai/multikf/pkg/machine"
 )
 
 var vagrant machine.Provisioner = "vagrant"

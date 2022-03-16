@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/footprintai/multikind/cmd/multikind"
+	"github.com/footprintai/multikf/cmd/multikf"
 )
 
 func main() {
-	multikind.Main()
+	multikf.Main()
 }

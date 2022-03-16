@@ -1,4 +1,4 @@
-package multikind
+package multikf
 
 import (
 	"encoding/csv"

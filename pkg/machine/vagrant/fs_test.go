@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/footprintai/multikind/pkg/machine/vagrant/template"
+	"github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

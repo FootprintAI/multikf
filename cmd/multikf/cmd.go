@@ -1,4 +1,4 @@
-package multikind
+package multikf
 
 import (
 	"errors"
@@ -12,10 +12,10 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"github.com/footprintai/multikind/pkg/machine"
-	_ "github.com/footprintai/multikind/pkg/machine/host"
-	_ "github.com/footprintai/multikind/pkg/machine/vagrant"
-	"github.com/footprintai/multikind/pkg/version"
+	"github.com/footprintai/multikf/pkg/machine"
+	_ "github.com/footprintai/multikf/pkg/machine/host"
+	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
+	"github.com/footprintai/multikf/pkg/version"
 )
 
 var (
@@ -30,9 +30,9 @@ var (
 	kubeconfigPath string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
 
 	rootCmd = &cobra.Command{
-		Use:   "multikind",
-		Short: "a multikind cli tool",
-		Long:  `multikind is a command-line tool which use vagrant and docker to provision k8s single-node cluster.`,
+		Use:   "multikf",
+		Short: "a multikf cli tool",
+		Long:  `multikf is a command-line tool which use vagrant and docker to provision Kubernetes and kubeflow single-node cluster.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// For cobra + glog flags. Available to all subcommands.
 			goflag.Parse()
@@ -41,7 +41,7 @@ var (
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
-		Short: "version of multikind ",
+		Short: "version of multikf ",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version.Print()
 			return nil
@@ -270,7 +270,7 @@ func init() {
 	rootCmd.AddCommand(connectCmd)
 	connectCmd.AddCommand(kubeflowCmd)
 
-	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikind", "multikind root dir")
+	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikfdir", "multikf root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")
 	rootCmd.PersistentFlags().StringVar(&provisionerStr, "provisioner", "docker", "provisioner, possible value: docker and vagrant")
 	addCmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the guest machine")
