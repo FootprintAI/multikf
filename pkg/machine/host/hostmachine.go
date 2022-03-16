@@ -100,13 +100,12 @@ func (h *HostMachine) HostDir() string {
 	return h.hostMachineDir
 }
 
-func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
+func (h *HostMachine) Up(forceDeletedIfNecessary bool, withKubeflow bool) error {
 	if err := h.ensureFiles(); err != nil {
 		return err
 	}
 	kindConfigPath := filepath.Join(h.hostMachineDir, "kind-config.yaml")
 	kubeConfigPath := filepath.Join(h.hostMachineDir, "kubeconfig.yaml")
-	kfManifestPath := filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml")
 	h.logger.V(1).Infof("hostmachine(%s): check %s for kubeconfig.yaml\n", h.name, kubeConfigPath)
 
 	if err := h.cli.ProvisonCluster(kindConfigPath); err != nil {
@@ -119,11 +118,14 @@ func (h *HostMachine) Up(forceDeletedIfNecessary bool) error {
 	if err := h.cli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
 		return err
 	}
-	if err := h.cli.InstallKubeflow(kubeConfigPath, kfManifestPath); err != nil {
-		return err
-	}
-	if err := h.cli.PatchKubeflow(kubeConfigPath); err != nil {
-		return err
+	if withKubeflow {
+		kfManifestPath := filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml")
+		if err := h.cli.InstallKubeflow(kubeConfigPath, kfManifestPath); err != nil {
+			return err
+		}
+		if err := h.cli.PatchKubeflow(kubeConfigPath); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -183,4 +185,11 @@ func (h *HostMachine) Portforward(svc, namespace string, fromPort int) (int, err
 	}
 	h.logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
 	return destPort, h.cli.Portforward(h.kubeconfig, svc, namespace, fromPort, destPort)
+}
+
+func (h *HostMachine) GetPods(namespace string) error {
+	if err := h.ensureKubeconfig(); err != nil {
+		return err
+	}
+	return h.cli.GetPods(h.kubeconfig, namespace)
 }

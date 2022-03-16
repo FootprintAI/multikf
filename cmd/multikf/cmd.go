@@ -28,6 +28,8 @@ var (
 	forceOverwrite bool   // force to overwrite the existing kubeconf file
 	verbose        bool   // verbose (default: true)
 	kubeconfigPath string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
+	namespace      string // namespace
+	withKubeflow   bool   // install with kubeflow components
 
 	rootCmd = &cobra.Command{
 		Use:   "multikf",
@@ -62,7 +64,7 @@ var (
 		Short: "add a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
-			return run.Add(args[0], cpus, memoryInG)
+			return run.Add(args[0], withKubeflow, cpus, memoryInG)
 		},
 	}
 	deleteCmd = &cobra.Command{
@@ -81,7 +83,7 @@ var (
 			return run.List()
 		},
 	}
-	kubeflowCmd = &cobra.Command{
+	connectkubeflowCmd = &cobra.Command{
 		Use:   "kubeflow command",
 		Short: "kubeflow command",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,6 +97,21 @@ var (
 	connectCmd = &cobra.Command{
 		Use:   "connect",
 		Short: "connect",
+	}
+	getPodsCmd = &cobra.Command{
+		Use:   "pods",
+		Short: "pods",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("failed to recognize cluster name")
+			}
+			run := mustNewRunCmd()
+			return run.GetPods(args[0])
+		},
+	}
+	getCmd = &cobra.Command{
+		Use:   "get",
+		Short: "get",
 	}
 )
 
@@ -138,12 +155,12 @@ func (m machineConfig) GetMemory() int {
 	return m.memoryInG
 }
 
-func (r *runCmd) Add(name string, cpus, memoryInG int) error {
+func (r *runCmd) Add(name string, withKubeflow bool, cpus, memoryInG int) error {
 	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG})
 	if err != nil {
 		return err
 	}
-	if err := m.Up(forceCreate); err != nil {
+	if err := m.Up(forceCreate, withKubeflow); err != nil {
 		r.logger.Errorf("runcmd: add node (%s) failed, err:%+v\n", name, err)
 		return err
 	}
@@ -257,6 +274,20 @@ func (r *runCmd) ConnectKubeflow(name string) error {
 	return nil
 }
 
+func (r *runCmd) GetPods(name string) error {
+	m, err := r.vag.NewMachine(name, nil)
+	if err != nil {
+		return err
+	}
+	err = m.GetPods(namespace)
+	if err != nil {
+		r.logger.Errorf("runcmd: failed to get pods, err:%+v\n", err)
+		return err
+	}
+	return nil
+
+}
+
 func Main() {
 	rootCmd.Execute()
 }
@@ -268,7 +299,9 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(exportCmd)
 	rootCmd.AddCommand(connectCmd)
-	connectCmd.AddCommand(kubeflowCmd)
+	connectCmd.AddCommand(connectkubeflowCmd)
+	rootCmd.AddCommand(getCmd)
+	getCmd.AddCommand(getPodsCmd)
 
 	rootCmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikfdir", "multikf root dir")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")
@@ -276,9 +309,11 @@ func init() {
 	addCmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the guest machine")
 	addCmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	addCmd.Flags().BoolVar(&forceCreate, "f", false, "force to create instance regardless the machine status")
+	addCmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
 	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
 	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")
+	getPodsCmd.Flags().StringVar(&namespace, "namespace", "", "namespace used (default: all-namespaces)")
 
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }

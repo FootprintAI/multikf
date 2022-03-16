@@ -245,6 +245,26 @@ func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toP
 	return stdout.Stdout()
 }
 
+func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
+	cmdAndArgs := []string{
+		cli.localKubectlBinaryPath,
+		"get",
+		"pods",
+		"--kubeconfig",
+		kindConfigfile,
+	}
+	if namespace == "" {
+		cmdAndArgs = append(cmdAndArgs, "--all-namespaces")
+	} else {
+		cmdAndArgs = append(cmdAndArgs, "--namespace", namespace)
+	}
+	stdout, err := cli.runCmd(cmdAndArgs)
+	if err != nil {
+		return err
+	}
+	return stdout.Stdout()
+}
+
 func (cli *CLI) RemoveCluster(clustername string) error {
 	cmdAndArgs := []string{
 		cli.localKindBinaryPath,

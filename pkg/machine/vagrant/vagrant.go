@@ -57,7 +57,8 @@ func (v *VagrantMachine) HostDir() string {
 	return v.vagrantMachineDir
 }
 
-func (v *VagrantMachine) Up(forceDeleteIfNecessary bool) error {
+func (v *VagrantMachine) Up(forceDeleteIfNecessary bool, withKubeflow bool) error {
+	// TODO: implement with kubeflow options
 	if v.config == nil {
 		return fmt.Errorf("vagrantmachine requires config when Up")
 	}
@@ -126,6 +127,10 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 
 func (v *VagrantMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
 	return 0, errors.New("todo")
+}
+
+func (v *VagrantMachine) GetPods(namespace string) error {
+	return errors.New("todo")
 }
 
 func (v *VagrantMachine) Name() string {
