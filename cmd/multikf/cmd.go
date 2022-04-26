@@ -14,6 +14,7 @@ import (
 
 	"github.com/footprintai/multikf/pkg/machine"
 	_ "github.com/footprintai/multikf/pkg/machine/host"
+	"github.com/footprintai/multikf/pkg/machine/vagrant"
 	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
 	"github.com/footprintai/multikf/pkg/version"
 )
@@ -30,6 +31,8 @@ var (
 	kubeconfigPath string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
 	namespace      string // namespace
 	withKubeflow   bool   // install with kubeflow components
+	useGPUs        int
+	withIP         string
 
 	rootCmd = &cobra.Command{
 		Use:   "multikf",
@@ -64,7 +67,7 @@ var (
 		Short: "add a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
-			return run.Add(args[0], withKubeflow, cpus, memoryInG)
+			return run.Add(args[0], withIP, withKubeflow, cpus, memoryInG, useGPUs)
 		},
 	}
 	deleteCmd = &cobra.Command{
@@ -145,6 +148,8 @@ type runCmd struct {
 type machineConfig struct {
 	cpus      int
 	memoryInG int
+	useGPUs   int
+	kubeAPIIP string
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -155,14 +160,34 @@ func (m machineConfig) GetMemory() int {
 	return m.memoryInG
 }
 
-func (r *runCmd) Add(name string, withKubeflow bool, cpus, memoryInG int) error {
-	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG})
+func (m machineConfig) GetGPUs() int {
+	return m.useGPUs
+}
+
+func (m machineConfig) GetKubeAPIIP() string {
+	return m.kubeAPIIP
+}
+
+func (r *runCmd) Add(name string, kubeapiip string, withKubeflow bool, cpus, memoryInG int, useGPUs int) error {
+
+	if err := ensureNoGPUForVagrant(r.vag); err != nil {
+		return err
+	}
+
+	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG, useGPUs: useGPUs, kubeAPIIP: kubeapiip})
 	if err != nil {
 		return err
 	}
 	if err := m.Up(forceCreate, withKubeflow); err != nil {
 		r.logger.Errorf("runcmd: add node (%s) failed, err:%+v\n", name, err)
 		return err
+	}
+	return nil
+}
+
+func ensureNoGPUForVagrant(vag machine.MachinesCURD) error {
+	if _, isVargant := vag.(*vagrant.VagrantMachines); isVargant && useGPUs > 0 {
+		return errors.New("vagrant machine haven't support gpu passthrough yet")
 	}
 	return nil
 }
@@ -310,6 +335,8 @@ func init() {
 	addCmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	addCmd.Flags().BoolVar(&forceCreate, "f", false, "force to create instance regardless the machine status")
 	addCmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
+	addCmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
+	addCmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
 	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
 	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")

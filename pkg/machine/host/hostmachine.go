@@ -35,6 +35,7 @@ func (hm *HostMachines) NewMachine(name string, options machine.MachineConfiger)
 		verbose:        hm.verbose,
 		kubeconfig:     filepath.Join(hm.hostDir, name, "kubeconfig.yaml"),
 		cli:            hm.cli,
+		options:        options,
 	}, nil
 }
 
@@ -58,6 +59,7 @@ type HostMachine struct {
 	hostMachineDir string
 	verbose        bool
 	kubeconfig     string // filepath to kubeconfig
+	options        machine.MachineConfiger
 
 	cli *CLI
 }
@@ -83,6 +85,8 @@ func (h *HostMachine) prepareFiles() error {
 	tmplConfig := &template.TemplateFileConfig{
 		Name:        h.name,
 		KubeApiPort: kubeport,
+		KubeApiIP:   h.options.GetKubeAPIIP(),
+		GPUs:        h.options.GetGPUs(),
 	}
 
 	vfolder := NewHostFolder(h.hostMachineDir)

@@ -8,6 +8,8 @@ type MachinesCURD interface {
 type MachineConfiger interface {
 	GetCPUs() int
 	GetMemory() int // in M bytes
+	GetGPUs() int
+	GetKubeAPIIP() string
 }
 
 type MachineCURD interface {

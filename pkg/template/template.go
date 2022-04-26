@@ -16,6 +16,10 @@ type KubeAPIPortGetter interface {
 	GetKubeAPIPort() int
 }
 
+type KubeAPIIPGetter interface {
+	GetKubeAPIIP() string
+}
+
 type SSHPortGetter interface {
 	GetSSHPort() int
 }
@@ -23,4 +27,8 @@ type SSHPortGetter interface {
 type CpuMemoryGetter interface {
 	GetCPUs() int
 	GetMemory() int
+}
+
+type GpuGetter interface {
+	GetGPUs() int
 }
