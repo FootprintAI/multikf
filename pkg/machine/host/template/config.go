@@ -7,6 +7,7 @@ type TemplateFileConfig struct {
 	KubeApiPort int
 	KubeApiIP   string
 	GPUs        int
+	ExportPorts []int
 }
 
 func (t *TemplateFileConfig) GetName() string {
@@ -27,4 +28,8 @@ func (t *TemplateFileConfig) GetGPUs() int {
 
 func (t *TemplateFileConfig) GetSSHPort() int {
 	return t.SSHPort
+}
+
+func (t *TemplateFileConfig) GetExportPorts() []int {
+	return t.ExportPorts
 }

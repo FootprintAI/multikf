@@ -34,6 +34,7 @@ type kindConfig interface {
 	pkgtemplate.KubeAPIPortGetter
 	pkgtemplate.KubeAPIIPGetter
 	pkgtemplate.GpuGetter
+	pkgtemplate.ExportPortsGetter
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -45,6 +46,8 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	k.KubeAPIPort = c.GetKubeAPIPort()
 	k.KubeAPIIP = c.GetKubeAPIIP()
 	k.UseGPU = c.GetGPUs() > 0
+	k.ExportPorts = c.GetExportPorts()
+
 	return nil
 }
 
@@ -54,6 +57,7 @@ type KindFileTemplate struct {
 	KubeAPIPort      int
 	UseGPU           bool
 	kindFileTemplate string
+	ExportPorts      []int
 }
 
 var kindDefaultFileTemplate string = `
@@ -64,6 +68,12 @@ nodes:
 - role: control-plane
   image: kindest/node:v1.21.2
   gpus: {{.UseGPU}}
+  {{if .ExportPorts}}extraPortMappings:{{end}}
+  {{- range $i, $p := .ExportPorts}}
+  - containerPort: {{ $p }}
+    hostPort: {{ $p }}
+    protocol: TCP
+  {{- end}}
 networking:
   apiServerAddress: {{.KubeAPIIP}}
   apiServerPort: {{.KubeAPIPort}}

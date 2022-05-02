@@ -32,3 +32,7 @@ type CpuMemoryGetter interface {
 type GpuGetter interface {
 	GetGPUs() int
 }
+
+type ExportPortsGetter interface {
+	GetExportPorts() []int
+}

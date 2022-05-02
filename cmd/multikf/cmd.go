@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -33,6 +35,7 @@ var (
 	withKubeflow   bool   // install with kubeflow components
 	useGPUs        int
 	withIP         string
+	exportPorts    string // export ports on hostmachine
 
 	rootCmd = &cobra.Command{
 		Use:   "multikf",
@@ -67,7 +70,7 @@ var (
 		Short: "add a guest machine",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			run := mustNewRunCmd()
-			return run.Add(args[0], withIP, withKubeflow, cpus, memoryInG, useGPUs)
+			return run.Add(args[0])
 		},
 	}
 	deleteCmd = &cobra.Command{
@@ -146,10 +149,11 @@ type runCmd struct {
 }
 
 type machineConfig struct {
-	cpus      int
-	memoryInG int
-	useGPUs   int
-	kubeAPIIP string
+	cpus        int
+	memoryInG   int
+	useGPUs     int
+	kubeAPIIP   string
+	exportPorts string
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -168,13 +172,23 @@ func (m machineConfig) GetKubeAPIIP() string {
 	return m.kubeAPIIP
 }
 
-func (r *runCmd) Add(name string, kubeapiip string, withKubeflow bool, cpus, memoryInG int, useGPUs int) error {
+func (m machineConfig) GetExportPorts() []int {
+	tokens := strings.Split(m.exportPorts, ",")
+	var exportPorts []int
+	for _, token := range tokens {
+		p, _ := strconv.Atoi(token)
+		exportPorts = append(exportPorts, p)
+	}
+	return exportPorts
+}
+
+func (r *runCmd) Add(name string) error {
 
 	if err := ensureNoGPUForVagrant(r.vag); err != nil {
 		return err
 	}
 
-	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG, useGPUs: useGPUs, kubeAPIIP: kubeapiip})
+	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG, useGPUs: useGPUs, kubeAPIIP: withIP, exportPorts: exportPorts})
 	if err != nil {
 		return err
 	}
@@ -337,6 +351,7 @@ func init() {
 	addCmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
 	addCmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
 	addCmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
+	addCmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(default: )")
 	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
 	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")

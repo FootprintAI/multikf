@@ -87,6 +87,7 @@ func (h *HostMachine) prepareFiles() error {
 		KubeApiPort: kubeport,
 		KubeApiIP:   h.options.GetKubeAPIIP(),
 		GPUs:        h.options.GetGPUs(),
+		ExportPorts: h.options.GetExportPorts(),
 	}
 
 	vfolder := NewHostFolder(h.hostMachineDir)

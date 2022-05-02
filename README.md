@@ -20,6 +20,8 @@ and this tool provides abstractions for them to operate clusters.
 
 Idealy, we could just use Kind which running as a container to provide resource isolation. However, Kind was unable to isolate resources from its underlying kubelet(see [issue](https://github.com/kubernetes-sigs/kind/issues/877)) due to kubelet's implementation. Thus, Vagrant is served as a resource isolation and provide clean guest enviornment.
 
+NOTE: Vagrant is not battle-tested, so use it with your cautions.
+
 #### How to use?
 
 ##### Add a vagrant machine named test000 with 1 cpu and 1G memory.
@@ -68,16 +70,17 @@ run kubectl from host
 
 Fields listed here is on our roadmap.
 
-| Fields | Supported |
-|------|------|
-| Cpu Isolation | O |
-| Memory Isolation | O |
-| GPU Isolation | X |
+| Fields | machine(Docker) | machine(Vagrant) |
+|------|------|------|
+| Cpu Isolation | O | O |
+| Memory Isolation | O | O |
+| GPU Isolation | O | X |
+| Expose KubeApi IP | O | O |
 
 
 #### Gpu Passthough
 
-For passing gpu to docker container, one approach is to use `--gpus=all` when you launched docker container like
+For passing gpu to docker container, one approach is to use `--gpus=all` when you launched docker container like.
 
 ```
 docker run -it --gpus=all ubuntu:21.10 /bin/bash
@@ -85,3 +88,4 @@ docker run -it --gpus=all ubuntu:21.10 /bin/bash
 ```
 where it relies on the host's cuda driver.
 However, Kind are NOT supported this approach, see [issue](https://github.com/kubernetes-sigs/kind/pull/1886)
+However, we use our [home-crafted kind](https://github.com/footprintai/kind/tree/gpu) for this purpose.
