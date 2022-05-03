@@ -149,6 +149,7 @@ type runCmd struct {
 }
 
 type machineConfig struct {
+	logger      log.Logger
 	cpus        int
 	memoryInG   int
 	useGPUs     int
@@ -173,12 +174,21 @@ func (m machineConfig) GetKubeAPIIP() string {
 }
 
 func (m machineConfig) GetExportPorts() []int {
+	if len(m.exportPorts) == 0 {
+		m.logger.V(1).Infof("getexportport: export nothing\n")
+		return nil
+	}
 	tokens := strings.Split(m.exportPorts, ",")
 	var exportPorts []int
 	for _, token := range tokens {
-		p, _ := strconv.Atoi(token)
+		p, err := strconv.Atoi(token)
+		if err != nil {
+			m.logger.Errorf("getexportport: parse failed, err:%+v\n", err)
+			continue
+		}
 		exportPorts = append(exportPorts, p)
 	}
+	m.logger.V(1).Infof("getexportport: export ports:%+v\n", exportPorts)
 	return exportPorts
 }
 
@@ -188,7 +198,14 @@ func (r *runCmd) Add(name string) error {
 		return err
 	}
 
-	m, err := r.vag.NewMachine(name, machineConfig{cpus: cpus, memoryInG: memoryInG, useGPUs: useGPUs, kubeAPIIP: withIP, exportPorts: exportPorts})
+	m, err := r.vag.NewMachine(name, machineConfig{
+		logger:      r.logger,
+		cpus:        cpus,
+		memoryInG:   memoryInG,
+		useGPUs:     useGPUs,
+		kubeAPIIP:   withIP,
+		exportPorts: exportPorts,
+	})
 	if err != nil {
 		return err
 	}
