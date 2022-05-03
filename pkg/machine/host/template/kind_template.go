@@ -66,6 +66,12 @@ apiVersion: kind.x-k8s.io/v1alpha4
 name: {{.Name}}
 nodes:
 - role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
   image: kindest/node:v1.21.2
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
