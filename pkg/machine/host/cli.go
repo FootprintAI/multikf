@@ -109,7 +109,7 @@ func (cli *CLI) ListClusters() ([]string, error) {
 		"get",
 		"clusters",
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 		"--config",
 		kindConfigfile,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -177,14 +177,20 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 		"--kubeconfig",
 		kubeConfigFile,
 	}
-	cli.logger.V(0).Info("this command will keep retry 2 times for every 30s.\n")
-	for i := 0; i < 3; i++ {
-		stdout, err := cli.runCmd(cmdAndArgs)
+	cli.logger.V(0).Info("this command will keep retry every 20s.\n")
+	for i := 0; i < 20; i++ {
+		stdout, status, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
 			return err
 		}
 		stdout.Stdout()
-		time.Sleep(30 * time.Second)
+
+		ps := <-status
+		cli.logger.V(1).Info("kf installation, ps code:%+v\n", ps.Exit)
+		if ps.Exit == 0 {
+			return nil
+		}
+		time.Sleep(20 * time.Second)
 	}
 	return nil
 }
@@ -215,7 +221,7 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 		},
 	}
 	for _, cmdAndArgs := range multiCmdAndArgs {
-		stdout, err := cli.runCmd(cmdAndArgs)
+		stdout, _, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
 			return err
 		}
@@ -238,7 +244,7 @@ func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toP
 		"--kubeconfig",
 		kubeConfigFile,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -258,7 +264,7 @@ func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
 	} else {
 		cmdAndArgs = append(cmdAndArgs, "--namespace", namespace)
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -273,7 +279,7 @@ func (cli *CLI) RemoveCluster(clustername string) error {
 		"--name",
 		clustername,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -292,7 +298,7 @@ func (cli *CLI) GetClusterStatus(containername ContainerName) (string, error) {
 		containername.Name(),
 		"--format='{{json .State}}'",
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -314,7 +320,7 @@ func (cli *CLI) RemoteExec(containername ContainerName, cmd string) (resp string
 		"-c",
 		cmd,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
@@ -330,7 +336,7 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 		"--name",
 		clustername,
 	}
-	stdout, err := cli.runCmd(cmdAndArgs)
+	stdout, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
@@ -373,21 +379,21 @@ func (o *outputStream) Stdout() error {
 	return nil
 }
 
-func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, error) {
+func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, <-chan cmd.Status, error) {
 	if cli.verbose {
-		cli.logger.V(0).Infof("cmd->%s\n", cmdAndArgs)
+		cli.logger.V(1).Infof("cmd->%s\n", cmdAndArgs)
 	}
 	cmdOptions := cmd.Options{
 		Buffered:  false,
 		Streaming: true,
 	}
 	runcmd := cmd.NewCmdOptions(cmdOptions, cmdAndArgs[0], cmdAndArgs[1:]...)
-	runcmd.Start()
+	status := runcmd.Start()
 	// run and output stderr
 	for stderrline := range runcmd.Stderr {
 		cli.logger.V(1).Infof("%s\n", stderrline)
 	}
 	//stat := <-runStatus
 
-	return newOutputStream(cli.logger, runcmd.Stdout), nil
+	return newOutputStream(cli.logger, runcmd.Stdout), status, nil
 }
