@@ -186,7 +186,7 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 		stdout.Stdout()
 
 		ps := <-status
-		cli.logger.V(1).Info("kf installation, ps code:%+v\n", ps.Exit)
+		cli.logger.V(1).Infof("kf installation, ps code:%+v\n", ps.Exit)
 		if ps.Exit == 0 {
 			return nil
 		}
