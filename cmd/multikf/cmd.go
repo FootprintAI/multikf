@@ -173,20 +173,30 @@ func (m machineConfig) GetKubeAPIIP() string {
 	return m.kubeAPIIP
 }
 
-func (m machineConfig) GetExportPorts() []int {
+func (m machineConfig) GetExportPorts() []machine.ExportPortPair {
 	if len(m.exportPorts) == 0 {
 		m.logger.V(1).Infof("getexportport: export nothing\n")
 		return nil
 	}
 	tokens := strings.Split(m.exportPorts, ",")
-	var exportPorts []int
+	var exportPorts []machine.ExportPortPair
 	for _, token := range tokens {
-		p, err := strconv.Atoi(token)
+		subtokens := strings.Split(token, ":")
+		if len(subtokens) != 2 {
+			m.logger.Errorf("getexportport: parse failed, expect: a:b but got:%s\n", token)
+			continue
+		}
+		hostport, err := strconv.Atoi(subtokens[0])
 		if err != nil {
 			m.logger.Errorf("getexportport: parse failed, err:%+v\n", err)
 			continue
 		}
-		exportPorts = append(exportPorts, p)
+		containerport, err := strconv.Atoi(subtokens[1])
+		if err != nil {
+			m.logger.Errorf("getexportport: parse failed, err:%+v\n", err)
+			continue
+		}
+		exportPorts = append(exportPorts, machine.ExportPortPair{HostPort: hostport, ContainerPort: containerport})
 	}
 	m.logger.V(1).Infof("getexportport: export ports:%+v\n", exportPorts)
 	return exportPorts
@@ -368,7 +378,7 @@ func init() {
 	addCmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
 	addCmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
 	addCmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
-	addCmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(default: )")
+	addCmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)")
 	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
 	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")

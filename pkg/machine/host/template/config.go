@@ -1,5 +1,7 @@
 package template
 
+import "github.com/footprintai/multikf/pkg/machine"
+
 type TemplateFileConfig struct {
 	// for host machine, we won't able to configure cpu/memory used, as kubelet inside a container can still access its host.
 	Name        string
@@ -7,7 +9,7 @@ type TemplateFileConfig struct {
 	KubeApiPort int
 	KubeApiIP   string
 	GPUs        int
-	ExportPorts []int
+	ExportPorts []machine.ExportPortPair
 }
 
 func (t *TemplateFileConfig) GetName() string {
@@ -30,6 +32,6 @@ func (t *TemplateFileConfig) GetSSHPort() int {
 	return t.SSHPort
 }
 
-func (t *TemplateFileConfig) GetExportPorts() []int {
+func (t *TemplateFileConfig) GetExportPorts() []machine.ExportPortPair {
 	return t.ExportPorts
 }

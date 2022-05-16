@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,10 +26,16 @@ func (s staticConfig) GetGPUs() int {
 	return 1
 }
 
-func (s staticConfig) GetExportPorts() []int {
-	return []int{
-		80,
-		443,
+func (s staticConfig) GetExportPorts() []machine.ExportPortPair {
+	return []machine.ExportPortPair{
+		machine.ExportPortPair{
+			HostPort:      80,
+			ContainerPort: 8081,
+		},
+		machine.ExportPortPair{
+			HostPort:      443,
+			ContainerPort: 8083,
+		},
 	}
 }
 
@@ -55,10 +62,10 @@ nodes:
   image: kindest/node:v1.21.2
   gpus: true
   extraPortMappings:
-  - containerPort: 80
+  - containerPort: 8081
     hostPort: 80
     protocol: TCP
-  - containerPort: 443
+  - containerPort: 8083
     hostPort: 443
     protocol: TCP
 networking:

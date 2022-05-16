@@ -10,7 +10,12 @@ type MachineConfiger interface {
 	GetMemory() int // in M bytes
 	GetGPUs() int
 	GetKubeAPIIP() string
-	GetExportPorts() []int
+	GetExportPorts() []ExportPortPair
+}
+
+type ExportPortPair struct {
+	HostPort      int
+	ContainerPort int
 }
 
 type MachineCURD interface {

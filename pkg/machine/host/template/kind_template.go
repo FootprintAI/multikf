@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 
+	"github.com/footprintai/multikf/pkg/machine"
 	pkgtemplate "github.com/footprintai/multikf/pkg/template"
 )
 
@@ -57,7 +58,7 @@ type KindFileTemplate struct {
 	KubeAPIPort      int
 	UseGPU           bool
 	kindFileTemplate string
-	ExportPorts      []int
+	ExportPorts      []machine.ExportPortPair
 }
 
 var kindDefaultFileTemplate string = `
@@ -76,8 +77,8 @@ nodes:
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
   {{- range $i, $p := .ExportPorts}}
-  - containerPort: {{ $p }}
-    hostPort: {{ $p }}
+  - containerPort: {{ $p.ContainerPort }}
+    hostPort: {{ $p.HostPort }}
     protocol: TCP
   {{- end}}
 networking:

@@ -9,7 +9,7 @@ import (
 var (
 	BuildTime   = ""
 	GitCommitId = ""
-	version, _  = goversion.NewVersion("2.0.3")
+	version, _  = goversion.NewVersion("2.1.0")
 )
 
 func GetVersion() *goversion.Version {

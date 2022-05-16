@@ -1,6 +1,10 @@
 package template
 
-import "io"
+import (
+	"io"
+
+	"github.com/footprintai/multikf/pkg/machine"
+)
 
 type TemplateExecutor interface {
 	Filename() string
@@ -34,5 +38,5 @@ type GpuGetter interface {
 }
 
 type ExportPortsGetter interface {
-	GetExportPorts() []int
+	GetExportPorts() []machine.ExportPortPair
 }
