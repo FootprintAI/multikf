@@ -17,13 +17,14 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-type urlBinary struct {
+type binaryResource struct {
 	Os      string
 	Kind    string
 	Kubectl string
 }
 
 func NewCLI(logger log.Logger, binpath string, verbose bool) (*CLI, error) {
+
 	if binpath == "" {
 		binpath = os.TempDir()
 	}
@@ -33,10 +34,11 @@ func NewCLI(logger log.Logger, binpath string, verbose bool) (*CLI, error) {
 	cli := &CLI{
 		logger:                 logger,
 		verbose:                verbose,
-		localKindBinaryPath:    filepath.Join(binpath, "kind"),
-		localKubectlBinaryPath: filepath.Join(binpath, "kubectl"),
+		localKindBinaryPath:    filepath.Join(binpath, localBinaryRes.Kind),
+		localKubectlBinaryPath: filepath.Join(binpath, localBinaryRes.Kubectl),
 		urlBinary:              urlBinaryRes,
 	}
+	cli.logger.V(0).Infof("running binary with OS:%s...\n", localBinaryRes.Os)
 	if err := cli.ensureBinaries(); err != nil {
 		return nil, err
 	}
@@ -48,7 +50,7 @@ type CLI struct {
 	verbose                bool
 	localKindBinaryPath    string
 	localKubectlBinaryPath string
-	urlBinary              urlBinary
+	urlBinary              binaryResource
 }
 
 func (cli *CLI) ensureBinaries() error {
