@@ -1,11 +1,11 @@
-package host
+package docker
 
 import (
 	"fmt"
 	"path/filepath"
 
 	machine "github.com/footprintai/multikf/pkg/machine"
-	"github.com/footprintai/multikf/pkg/machine/host/template"
+	"github.com/footprintai/multikf/pkg/machine/docker/template"
 	"sigs.k8s.io/kind/pkg/log"
 )
 

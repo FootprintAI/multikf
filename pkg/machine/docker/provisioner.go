@@ -1,4 +1,4 @@
-package host
+package docker
 
 import (
 	machine "github.com/footprintai/multikf/pkg/machine"

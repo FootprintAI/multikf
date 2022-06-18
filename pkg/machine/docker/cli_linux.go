@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package host
+package docker
 
 var urlBinaryRes = binaryResource{
 	Os:      "linux",

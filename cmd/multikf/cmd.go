@@ -15,9 +15,8 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 
 	"github.com/footprintai/multikf/pkg/machine"
-	_ "github.com/footprintai/multikf/pkg/machine/host"
+	_ "github.com/footprintai/multikf/pkg/machine/docker"
 	"github.com/footprintai/multikf/pkg/machine/vagrant"
-	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
 	"github.com/footprintai/multikf/pkg/version"
 )
 

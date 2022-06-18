@@ -1,7 +1,8 @@
-package host
+package docker
 
 import (
 	"fmt"
+	"os"
 	//"os"
 	"testing"
 

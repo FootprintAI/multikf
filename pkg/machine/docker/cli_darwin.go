@@ -1,7 +1,7 @@
 //go:build darwin
 // +build darwin
 
-package host
+package docker
 
 var urlBinaryRes = binaryResource{
 	Os:      "darwin",

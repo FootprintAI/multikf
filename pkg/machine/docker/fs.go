@@ -1,8 +1,8 @@
-package host
+package docker
 
 import (
 	kfmanifests "github.com/footprintai/multikf/kfmanifests"
-	hosttemplates "github.com/footprintai/multikf/pkg/machine/host/template"
+	hosttemplates "github.com/footprintai/multikf/pkg/machine/docker/template"
 	templatefs "github.com/footprintai/multikf/pkg/template/fs"
 	//log "github.com/golang/glog"
 )
