@@ -24,10 +24,38 @@ NOTE: Vagrant is not battle-tested, so use it with your cautions.
 
 #### How to use?
 
+Usage:
+  multikf add <machine-name> [flags]
+
+Flags:
+      --cpus int               number of cpus allocated to the guest machine (default 1)
+      --export_ports string    export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)
+      --f                      force to create instance regardless the machine status
+  -h, --help                   help for add
+      --memoryg int            number of memory in gigabytes allocated to the guest machine (default 1)
+      --use_gpus int           use gpu resources (default: 0), possible value (0 or 1)
+      --with_ip string         with a specific ip address for kubeapi (default: 0.0.0.0) (default "0.0.0.0")
+      --with_kubeflow          install kubeflow modules (default: true) (default true)
+      --with_password string   with a specific password for default user (default: 12341234) (default "12341234")
+
+
 ##### Add a vagrant machine named test000 with 1 cpu and 1G memory.
 
 ```
-./multikf add test000 --cpu 1 --memory 1
+./multikf add test000 --cpus 1 --memoryg 1 --provisioner=vagrant
+```
+ 
+ ##### Add a docker machine named test001 with 1 cpu, 1G memory, and all gpus.
+
+```
+./multikf add test000 --cpus=1 --memoryg=1 --use_gpus=1 --provisioner=docker
+```
+ 
+ 
+ ##### Add a docker machine named test002 with 1 cpu, 1G memory, and password for helloworld.
+
+```
+./multikf add test000 --cpus=1 --memoryg=16 --with_password=helloworld --provisioner=docker
 ```
 
 ##### Export a vargant machine's kubeconfig
