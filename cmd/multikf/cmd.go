@@ -15,27 +15,27 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 
 	"github.com/footprintai/multikf/pkg/machine"
-	_ "github.com/footprintai/multikf/pkg/machine/host"
+	_ "github.com/footprintai/multikf/pkg/machine/docker"
 	"github.com/footprintai/multikf/pkg/machine/vagrant"
-	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
 	"github.com/footprintai/multikf/pkg/version"
 )
 
 var (
-	cpus           int    // number of cpus allocated to the geust machine
-	memoryInG      int    // number of Gigabytes allocated to the guest machine
-	provisionerStr string // provider specifies the underly privisoner for virtual machine, either docker (under host) or vagrant
-	guestRootDir   string // root dir which containing multiple guest machines, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.multilind)
-	forceDelete    bool   // force to deleted the instance (default: false)
-	forceCreate    bool   // force to create the instance regardless the instance's status (default: false)
-	forceOverwrite bool   // force to overwrite the existing kubeconf file
-	verbose        bool   // verbose (default: true)
-	kubeconfigPath string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
-	namespace      string // namespace
-	withKubeflow   bool   // install with kubeflow components
-	useGPUs        int
-	withIP         string
-	exportPorts    string // export ports on hostmachine
+	cpus            int    // number of cpus allocated to the geust machine
+	memoryInG       int    // number of Gigabytes allocated to the guest machine
+	provisionerStr  string // provider specifies the underly privisoner for virtual machine, either docker (under host) or vagrant
+	guestRootDir    string // root dir which containing multiple guest machines, each folder(i.e. $machinename) represents a single virtual machine configuration (default: ./.multilind)
+	forceDelete     bool   // force to deleted the instance (default: false)
+	forceCreate     bool   // force to create the instance regardless the instance's status (default: false)
+	forceOverwrite  bool   // force to overwrite the existing kubeconf file
+	verbose         bool   // verbose (default: true)
+	kubeconfigPath  string // kubeconfig path of a guest machine (default: ./.mulitkind/$machine/kubeconfig)
+	namespace       string // namespace
+	withKubeflow    bool   // install with kubeflow components
+	useGPUs         int
+	defaultPassword string
+	withIP          string
+	exportPorts     string // export ports on hostmachine
 
 	rootCmd = &cobra.Command{
 		Use:   "multikf",
@@ -140,6 +140,9 @@ func newRunCmd() (*runCmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := vag.EnsureRuntime(); err != nil {
+		return nil, err
+	}
 	return &runCmd{vag: vag, logger: logger}, nil
 }
 
@@ -149,20 +152,22 @@ type runCmd struct {
 }
 
 type machineConfig struct {
-	logger      log.Logger
-	cpus        int
-	memoryInG   int
-	useGPUs     int
-	kubeAPIIP   string
-	exportPorts string
+	logger          log.Logger
+	cpus            int
+	memoryInG       int
+	useGPUs         int
+	kubeAPIIP       string
+	exportPorts     string
+	defaultPassword string
 }
 
 func (m machineConfig) GetCPUs() int {
 	return m.cpus
 }
 
+// GetMemory returns memory amount in M bytes
 func (m machineConfig) GetMemory() int {
-	return m.memoryInG
+	return m.memoryInG * 1024
 }
 
 func (m machineConfig) GetGPUs() int {
@@ -202,6 +207,10 @@ func (m machineConfig) GetExportPorts() []machine.ExportPortPair {
 	return exportPorts
 }
 
+func (m machineConfig) GetDefaultPassword() string {
+	return m.defaultPassword
+}
+
 func (r *runCmd) Add(name string) error {
 
 	if err := ensureNoGPUForVagrant(r.vag); err != nil {
@@ -209,12 +218,13 @@ func (r *runCmd) Add(name string) error {
 	}
 
 	m, err := r.vag.NewMachine(name, machineConfig{
-		logger:      r.logger,
-		cpus:        cpus,
-		memoryInG:   memoryInG,
-		useGPUs:     useGPUs,
-		kubeAPIIP:   withIP,
-		exportPorts: exportPorts,
+		logger:          r.logger,
+		cpus:            cpus,
+		memoryInG:       memoryInG,
+		useGPUs:         useGPUs,
+		kubeAPIIP:       withIP,
+		exportPorts:     exportPorts,
+		defaultPassword: defaultPassword,
 	})
 	if err != nil {
 		return err
@@ -379,6 +389,7 @@ func init() {
 	addCmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
 	addCmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
 	addCmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)")
+	addCmd.Flags().StringVar(&defaultPassword, "with_password", "12341234", "with a specific password for default user (default: 12341234)")
 	deleteCmd.Flags().BoolVar(&forceDelete, "f", false, "force remove the guest instance")
 	exportCmd.Flags().StringVar(&kubeconfigPath, "kubeconfig_path", "", "force remove the guest instance")
 	exportCmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite the exiting file")

@@ -40,3 +40,7 @@ type GpuGetter interface {
 type ExportPortsGetter interface {
 	GetExportPorts() []machine.ExportPortPair
 }
+
+type DefaultPasswordGetter interface {
+	GetDefaultPassword() string
+}

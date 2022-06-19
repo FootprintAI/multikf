@@ -1,6 +1,7 @@
 package machine
 
 type MachinesCURD interface {
+	EnsureRuntime() error
 	NewMachine(string, MachineConfiger) (MachineCURD, error)
 	ListMachines() ([]MachineCURD, error)
 }
@@ -11,6 +12,7 @@ type MachineConfiger interface {
 	GetGPUs() int
 	GetKubeAPIIP() string
 	GetExportPorts() []ExportPortPair
+	GetDefaultPassword() string
 }
 
 type ExportPortPair struct {
