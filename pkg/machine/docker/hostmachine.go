@@ -95,17 +95,20 @@ func (h *HostMachine) prepareFiles() error {
 	}
 	h.logger.V(1).Infof("hostmachine(%s): get port (%d) for kubeapi\n", h.name, kubeport)
 	tmplConfig := &template.TemplateFileConfig{
-		Name:        h.name,
-		KubeApiPort: kubeport,
-		KubeApiIP:   h.options.GetKubeAPIIP(),
-		GPUs:        h.options.GetGPUs(),
-		ExportPorts: h.options.GetExportPorts(),
+		Name:            h.name,
+		KubeApiPort:     kubeport,
+		KubeApiIP:       h.options.GetKubeAPIIP(),
+		GPUs:            h.options.GetGPUs(),
+		ExportPorts:     h.options.GetExportPorts(),
+		DefaultPassword: h.options.GetDefaultPassword(),
 	}
 
 	vfolder := NewHostFolder(h.hostMachineDir)
 	if err := vfolder.GenerateFiles(tmplConfig); err != nil {
+		h.logger.Errorf("hostmachine(%s): failed to generate files, err:%+v\n", h.name, err)
 		return err
 	}
+	h.logger.V(1).Infof("hostmachine(%s): configs are prepared\n", h.name)
 	return nil
 }
 

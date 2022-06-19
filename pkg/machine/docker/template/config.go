@@ -10,6 +10,8 @@ type TemplateFileConfig struct {
 	KubeApiIP   string
 	GPUs        int
 	ExportPorts []machine.ExportPortPair
+
+	DefaultPassword string
 }
 
 func (t *TemplateFileConfig) GetName() string {
@@ -34,4 +36,8 @@ func (t *TemplateFileConfig) GetSSHPort() int {
 
 func (t *TemplateFileConfig) GetExportPorts() []machine.ExportPortPair {
 	return t.ExportPorts
+}
+
+func (t *TemplateFileConfig) GetDefaultPassword() string {
+	return t.DefaultPassword
 }

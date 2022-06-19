@@ -12,6 +12,7 @@ type MachineConfiger interface {
 	GetGPUs() int
 	GetKubeAPIIP() string
 	GetExportPorts() []ExportPortPair
+	GetDefaultPassword() string
 }
 
 type ExportPortPair struct {
