@@ -24,6 +24,7 @@ NOTE: Vagrant is not battle-tested, so use it with your cautions.
 
 #### How to use?
 
+```
 Usage:
   multikf add <machine-name> [flags]
 
@@ -37,7 +38,7 @@ Flags:
       --with_ip string         with a specific ip address for kubeapi (default: 0.0.0.0) (default "0.0.0.0")
       --with_kubeflow          install kubeflow modules (default: true) (default true)
       --with_password string   with a specific password for default user (default: 12341234) (default "12341234")
-
+```
 
 ##### Add a vagrant machine named test000 with 1 cpu and 1G memory.
 
