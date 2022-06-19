@@ -27,17 +27,33 @@ type VagrantMachines struct {
 	verbose    bool
 }
 
+func (vm *VagrantMachines) EnsureRuntime() error {
+	out, status, err := machine.NewCmd(vm.logger, vm.verbose).Run("vagrant", "--version")
+	if err != nil {
+		return err
+	}
+	out.Stdout()
+	procStatus := <-status
+	if procStatus.Exit != 0 {
+		return fmt.Errorf("proc(vagrant): vagrant is not installed? Use `vagrant --version` to verify results")
+	}
+	return nil
+}
+
 func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfiger) (machine.MachineCURD, error) {
-	return &VagrantMachine{
+	onevm := &VagrantMachine{
 		logger:            vm.logger,
 		name:              name,
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
-		config: &VagrantMachineConfig{
+	}
+	if options != nil {
+		onevm.config = &VagrantMachineConfig{
 			CPUs:   options.GetCPUs(),
 			Memory: options.GetMemory(),
-		},
-	}, nil
+		}
+	}
+	return onevm, nil
 }
 
 type VagrantMachine struct {
@@ -100,7 +116,7 @@ func (v *VagrantMachine) Destroy(force bool) error {
 	if err != nil {
 		return err
 	}
-	return cli.Destroy(force)
+	return cli.Destroy()
 }
 
 func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
@@ -185,6 +201,9 @@ func (vm *VagrantMachines) ListMachines() ([]machine.MachineCURD, error) {
 		return nil, err
 	}
 	for _, entry := range entries {
+		if entry.Name() == "bin" {
+			continue
+		}
 		if entry.IsDir() {
 			machineName := entry.Name()
 

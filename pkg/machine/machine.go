@@ -1,6 +1,7 @@
 package machine
 
 type MachinesCURD interface {
+	EnsureRuntime() error
 	NewMachine(string, MachineConfiger) (MachineCURD, error)
 	ListMachines() ([]MachineCURD, error)
 }

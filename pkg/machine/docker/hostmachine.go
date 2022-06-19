@@ -19,6 +19,18 @@ func NewHostMachines(logger log.Logger, hostDir string, verbose bool) machine.Ma
 	}
 }
 
+func (hm *HostMachines) EnsureRuntime() error {
+	_, status, err := machine.NewCmd(hm.logger, hm.verbose).Run("docker", "version")
+	if err != nil {
+		return err
+	}
+	procStatus := <-status
+	if procStatus.Exit != 0 {
+		return fmt.Errorf("proc(docker): docker daemon is not running? Use `docker ps` to verify results")
+	}
+	return nil
+}
+
 type HostMachines struct {
 	logger  log.Logger
 	hostDir string

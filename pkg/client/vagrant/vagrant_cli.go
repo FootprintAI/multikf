@@ -74,15 +74,14 @@ func (v *VagrantCli) TryUp(forceDeleteIfNecessary bool) error {
 		return nil
 	}
 	log.Infof("vagrantmachine(%s) clean up vagrant previous state with force=%v\n", v.name, forceDeleteIfNecessary)
-	v.Destroy(forceDeleteIfNecessary)
+	v.Destroy()
 	return v.TryUp(forceDeleteIfNecessary)
 }
 
-func (v *VagrantCli) Destroy(force bool) error {
+func (v *VagrantCli) Destroy() error {
 	cmd := v.client.Destroy()
 	cmd.Verbose = v.Verbose
 	cmd.MachineName = v.name
-	cmd.Force = force
 	if err := cmd.Run(); err != nil {
 		return err
 	}

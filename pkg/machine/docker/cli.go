@@ -15,6 +15,8 @@ import (
 
 	"github.com/go-cmd/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"github.com/footprintai/multikf/pkg/machine"
 )
 
 type binaryResource struct {
@@ -111,11 +113,11 @@ func (cli *CLI) ListClusters() ([]string, error) {
 		"get",
 		"clusters",
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return nil, err
 	}
-	stdoutblob, err := readall(stdout)
+	stdoutblob, err := readall(sr)
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +155,11 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 		"--config",
 		kindConfigfile,
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
-	return stdout.Stdout()
+	return sr.Stdout()
 }
 
 func (cli *CLI) InstallRequiredPkgs(containername ContainerName) error {
@@ -181,11 +183,11 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 	}
 	cli.logger.V(0).Info("this command will keep retry every 20s.\n")
 	for i := 0; i < 20; i++ {
-		stdout, status, err := cli.runCmd(cmdAndArgs)
+		sr, status, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
 			return err
 		}
-		stdout.Stdout()
+		sr.Stdout()
 
 		ps := <-status
 		cli.logger.V(1).Infof("kf installation, ps code:%+v\n", ps.Exit)
@@ -223,11 +225,11 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 		},
 	}
 	for _, cmdAndArgs := range multiCmdAndArgs {
-		stdout, _, err := cli.runCmd(cmdAndArgs)
+		sr, _, err := cli.runCmd(cmdAndArgs)
 		if err != nil {
 			return err
 		}
-		stdout.Stdout()
+		sr.Stdout()
 		time.Sleep(3 * time.Second)
 
 	}
@@ -246,11 +248,11 @@ func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toP
 		"--kubeconfig",
 		kubeConfigFile,
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
-	return stdout.Stdout()
+	return sr.Stdout()
 }
 
 func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
@@ -266,11 +268,11 @@ func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
 	} else {
 		cmdAndArgs = append(cmdAndArgs, "--namespace", namespace)
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
-	return stdout.Stdout()
+	return sr.Stdout()
 }
 
 func (cli *CLI) RemoveCluster(clustername string) error {
@@ -281,11 +283,11 @@ func (cli *CLI) RemoveCluster(clustername string) error {
 		"--name",
 		clustername,
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
-	return stdout.Stdout()
+	return sr.Stdout()
 
 }
 
@@ -300,12 +302,12 @@ func (cli *CLI) GetClusterStatus(containername ContainerName) (string, error) {
 		containername.Name(),
 		"--format='{{json .State}}'",
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
 	d := dockerState{}
-	blob, _ := readall(stdout)
+	blob, _ := readall(sr)
 	stripped := blob[1 : len(blob)-2] // remove ' xxx '\n
 	if err := json.Unmarshal(stripped, &d); err != nil {
 		return "", err
@@ -322,11 +324,11 @@ func (cli *CLI) RemoteExec(containername ContainerName, cmd string) (resp string
 		"-c",
 		cmd,
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return "", err
 	}
-	all, _ := readall(stdout)
+	all, _ := readall(sr)
 	return string(all), nil
 }
 
@@ -338,64 +340,17 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 		"--name",
 		clustername,
 	}
-	stdout, _, err := cli.runCmd(cmdAndArgs)
+	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
 		return err
 	}
-	contentBlob, err := readall(stdout)
+	contentBlob, err := readall(sr)
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(exportLocalFilePath, contentBlob, 0600)
 }
 
-// outputStream implements io.Reader by wrapping the line channel
-type outputStream struct {
-	logger log.Logger
-	ch     chan string
-}
-
-func newOutputStream(logger log.Logger, ch chan string) *outputStream {
-	return &outputStream{ch: ch, logger: logger}
-}
-
-func (o *outputStream) Read(b []byte) (int, error) {
-	out, more := <-o.ch
-	if !more {
-		return 0, io.EOF
-	}
-	if len(out) > len(b) {
-		panic(fmt.Sprintf("insufficient buffer size(buf:%d, data:%d), data could be lost", len(b), len(out)))
-	}
-	n := copy(b[:len(b)-1], []byte(out))
-	b[n] = '\n'
-	return n + 1, nil
-}
-
-func (o *outputStream) Stdout() error {
-	all, err := readall(o)
-	if err != nil {
-		return err
-	}
-	o.logger.V(0).Infof("%s\n", string(all))
-	return nil
-}
-
-func (cli *CLI) runCmd(cmdAndArgs []string) (*outputStream, <-chan cmd.Status, error) {
-	if cli.verbose {
-		cli.logger.V(1).Infof("cmd->%s\n", cmdAndArgs)
-	}
-	cmdOptions := cmd.Options{
-		Buffered:  false,
-		Streaming: true,
-	}
-	runcmd := cmd.NewCmdOptions(cmdOptions, cmdAndArgs[0], cmdAndArgs[1:]...)
-	status := runcmd.Start()
-	// run and output stderr
-	for stderrline := range runcmd.Stderr {
-		cli.logger.V(1).Infof("%s\n", stderrline)
-	}
-	//stat := <-runStatus
-
-	return newOutputStream(cli.logger, runcmd.Stdout), status, nil
+func (cli *CLI) runCmd(cmdAndArgs []string) (machine.StreamReader, <-chan cmd.Status, error) {
+	return machine.NewCmd(cli.logger, cli.verbose).Run(cmdAndArgs...)
 }

@@ -139,6 +139,9 @@ func newRunCmd() (*runCmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := vag.EnsureRuntime(); err != nil {
+		return nil, err
+	}
 	return &runCmd{vag: vag, logger: logger}, nil
 }
 
@@ -160,8 +163,9 @@ func (m machineConfig) GetCPUs() int {
 	return m.cpus
 }
 
+// GetMemory returns memory amount in M bytes
 func (m machineConfig) GetMemory() int {
-	return m.memoryInG
+	return m.memoryInG * 1024
 }
 
 func (m machineConfig) GetGPUs() int {
