@@ -6,18 +6,25 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	vagrantclient "github.com/footprintai/multikf/pkg/client/vagrant"
 	machine "github.com/footprintai/multikf/pkg/machine"
+	machinecmd "github.com/footprintai/multikf/pkg/machine/cmd"
+	"github.com/footprintai/multikf/pkg/machine/fsutil"
+	"github.com/footprintai/multikf/pkg/machine/kubectl"
+	machinekubectl "github.com/footprintai/multikf/pkg/machine/kubectl"
 	"github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-func NewVagrantMachines(logger log.Logger, vagrantDir string, verbose bool) machine.MachinesCURD {
+func NewVagrantMachines(logger log.Logger, vagrantDir string, verbose bool) machine.MachineCURDFactory {
+	kubecli, _ := machinekubectl.NewCLI(logger, filepath.Join(vagrantDir, "bin"), verbose)
 	return &VagrantMachines{
 		logger:     logger,
 		vagrantDir: vagrantDir,
 		verbose:    verbose,
+		kubecli:    kubecli,
 	}
 }
 
@@ -25,14 +32,14 @@ type VagrantMachines struct {
 	logger     log.Logger
 	vagrantDir string
 	verbose    bool
+	kubecli    *machinekubectl.CLI
 }
 
 func (vm *VagrantMachines) EnsureRuntime() error {
-	out, status, err := machine.NewCmd(vm.logger, vm.verbose).Run("vagrant", "--version")
+	_, status, err := machinecmd.NewCmd(vm.logger, vm.verbose).Run("vagrant", "--version")
 	if err != nil {
 		return err
 	}
-	out.Stdout()
 	procStatus := <-status
 	if procStatus.Exit != 0 {
 		return fmt.Errorf("proc(vagrant): vagrant is not installed? Use `vagrant --version` to verify results")
@@ -41,43 +48,56 @@ func (vm *VagrantMachines) EnsureRuntime() error {
 }
 
 func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfiger) (machine.MachineCURD, error) {
-	onevm := &VagrantMachine{
+	if err := checkMachineNaming(name); err != nil {
+		return nil, err
+	}
+	return &VagrantMachine{
 		logger:            vm.logger,
+		mtype:             machine.MachineTypeVagrant,
 		name:              name,
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
+		options:           options,
+		kubecli:           vm.kubecli,
+	}, nil
+}
+
+func checkMachineNaming(machinename string) error {
+	if strings.Contains(machinename, "-") {
+		return fmt.Errorf("vagrant: invalid naming. dash('-') is not allowed ")
 	}
-	if options != nil {
-		onevm.config = &VagrantMachineConfig{
-			CPUs:   options.GetCPUs(),
-			Memory: options.GetMemory(),
-		}
-	}
-	return onevm, nil
+	return nil
 }
 
 type VagrantMachine struct {
 	logger            log.Logger
+	mtype             machine.MachineType
 	name              string
 	vagrantMachineDir string
 	verbose           bool
-	config            *VagrantMachineConfig
+	options           machine.MachineConfiger
+	kubecli           *machinekubectl.CLI
 }
 
-type VagrantMachineConfig struct {
-	CPUs   int
-	Memory int // measured in M bytes
+func (v *VagrantMachine) Type() machine.MachineType {
+	return v.mtype
+}
+
+func (v *VagrantMachine) GetKubeCli() *kubectl.CLI {
+	return v.kubecli
 }
 
 func (v *VagrantMachine) HostDir() string {
 	return v.vagrantMachineDir
 }
 
-func (v *VagrantMachine) Up(forceDeleteIfNecessary bool, withKubeflow bool) error {
+func (v *VagrantMachine) GetKubeConfig() string {
+	return filepath.Join(v.HostDir(), "kubeconfig.yaml")
+}
+
+func (v *VagrantMachine) Up() error {
 	// TODO: implement with kubeflow options
-	if v.config == nil {
-		return fmt.Errorf("vagrantmachine requires config when Up")
-	}
+
 	if err := v.ensureVagrantFiles(); err != nil {
 		return err
 	}
@@ -86,11 +106,15 @@ func (v *VagrantMachine) Up(forceDeleteIfNecessary bool, withKubeflow bool) erro
 	if err != nil {
 		return err
 	}
-	return cli.TryUp(forceDeleteIfNecessary)
+	if err := cli.TryUp(); err != nil {
+		return err
+	}
+	kubeConfigPath := filepath.Join(v.vagrantMachineDir, "kubeconfig.yaml")
+	return v.ExportKubeConfig(kubeConfigPath, true)
 }
 
 func (v *VagrantMachine) NewVagrantCli() (*vagrantclient.VagrantCli, error) {
-	return vagrantclient.NewVagrantCli(v.name, v.vagrantMachineDir, v.verbose)
+	return vagrantclient.NewVagrantCli(v.name, v.vagrantMachineDir, v.logger, v.verbose)
 }
 
 func (v *VagrantMachine) ExportKubeConfig(path string, force bool) error {
@@ -110,7 +134,7 @@ func (v *VagrantMachine) ExportKubeConfig(path string, force bool) error {
 	return cli.Scp("/home/vagrant/.kube/config", path)
 }
 
-func (v *VagrantMachine) Destroy(force bool) error {
+func (v *VagrantMachine) Destroy() error {
 	v.logger.V(0).Infof("vagrantmachine(%s): ready to destroy\n", v.name)
 	cli, err := v.NewVagrantCli()
 	if err != nil {
@@ -153,10 +177,11 @@ func (v *VagrantMachine) Name() string {
 	return v.name
 }
 
+// TODO(hsiny): add force overwrite options
 func (v *VagrantMachine) ensureVagrantFiles() error {
 	// only check Vagrantfile
-	f := filepath.Join(v.vagrantMachineDir, "Vagrantfile")
-	if _, err := os.Stat(f); os.IsNotExist(err) {
+	v.logger.V(0).Infof("vagrantmachine dir:%s\n", v.vagrantMachineDir)
+	if !hasVagrantfileInDir(v.vagrantMachineDir) || v.options.GetForceOverwriteConfig() {
 		v.logger.V(0).Infof("vagrantmachine(%s): prepare files under %s\n", v.name, v.vagrantMachineDir)
 		if err := v.prepareFiles(); err != nil {
 			return err
@@ -164,7 +189,9 @@ func (v *VagrantMachine) ensureVagrantFiles() error {
 		return nil
 	}
 	// vagrantfile exists
-	return fmt.Errorf("vagrantmahcine: Vagrantfile exists")
+	v.logger.V(0).Infof("vagrantmachine: Vagrantfile exists, reuse it\n")
+	return nil
+	//return fmt.Errorf("vagrantmahcine: Vagrantfile exists")
 }
 
 func (v *VagrantMachine) prepareFiles() error {
@@ -177,13 +204,16 @@ func (v *VagrantMachine) prepareFiles() error {
 		return err
 	}
 	v.logger.V(0).Infof("vagrantmachine(%s): get port (%d,%d) for ssh and kubeapi\n", v.name, sshport, kubeport)
-	tmplConfig := &template.TemplateFileConfig{
-		Name:        v.name,
-		CPUs:        v.config.CPUs,
-		Memory:      v.config.Memory,
-		SSHPort:     sshport,
-		KubeApiPort: kubeport,
-	}
+	tmplConfig := template.NewVagrantTemplateConfig(
+		v.name,
+		v.options.GetCPUs(),
+		v.options.GetMemory(),
+		sshport,
+		kubeport,
+		v.options.GetKubeAPIIP(),
+		v.options.GetGPUs(),
+		v.options.GetExportPorts(),
+	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)
 	if err := vfolder.GenerateVagrantFiles(tmplConfig); err != nil {
@@ -201,15 +231,20 @@ func (vm *VagrantMachines) ListMachines() ([]machine.MachineCURD, error) {
 		return nil, err
 	}
 	for _, entry := range entries {
-		if entry.Name() == "bin" {
+		if !hasVagrantfileInDir(filepath.Join(vm.vagrantDir, entry.Name())) {
 			continue
-		}
-		if entry.IsDir() {
+		} else {
 			machineName := entry.Name()
-
 			m, _ := vm.NewMachine(machineName, nil)
 			machines = append(machines, m)
 		}
 	}
 	return machines, nil
+}
+
+func hasVagrantfileInDir(folderPath string) bool {
+	if folderPath == "bin" {
+		return false
+	}
+	return fsutil.Exists(os.DirFS(folderPath), "Vagrantfile")
 }

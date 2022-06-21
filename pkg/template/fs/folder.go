@@ -1,11 +1,13 @@
 package fs
 
 import (
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
 
 	//log "github.com/golang/glog"
+	"github.com/footprintai/multikf/pkg/machine/fsutil"
 	"github.com/spf13/afero"
 )
 
@@ -20,6 +22,18 @@ type Folder struct {
 	folderFs   afero.Fs
 	folderPath string
 	//forceOverwrite bool
+}
+
+func (v *Folder) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return afero.WriteFile(v.folderFs, filename, data, perm)
+}
+
+func (v *Folder) Exists(filename string) bool {
+	return fsutil.Exists(v.IOFS(), filename)
+}
+
+func (v *Folder) IOFS() fs.FS {
+	return afero.NewIOFS(v.folderFs)
 }
 
 func (v *Folder) Root() string {
@@ -37,7 +51,7 @@ func (v *Folder) ensureFolder() error {
 }
 
 // DumpFiles dumps virtualFs into a real file folder
-func (v *Folder) DumpFiles(virtualFs ...fs.FS) error {
+func (v *Folder) DumpFiles(overwrite bool, virtualFs ...fs.FS) error {
 	if err := v.ensureFolder(); err != nil {
 		return err
 	}
@@ -56,6 +70,9 @@ func (v *Folder) DumpFiles(virtualFs ...fs.FS) error {
 				return nil
 			}
 			//fmt.Printf("F %s\n", path)
+			if v.Exists(path) && !overwrite {
+				return fmt.Errorf("dumpfile: destination(%s) exists", path)
+			}
 			fd, err := vfs.Open(path)
 			if err != nil {
 				return err
@@ -65,7 +82,8 @@ func (v *Folder) DumpFiles(virtualFs ...fs.FS) error {
 				return err
 			}
 			fd.Close()
-			if err := afero.WriteFile(v.folderFs, path, b, 0666); err != nil {
+			// TODO: check the file exists or not
+			if err := v.WriteFile(path, b, 0666); err != nil {
 				return err
 			}
 			return nil

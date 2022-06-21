@@ -1,6 +1,8 @@
 package machine
 
-type MachinesCURD interface {
+import "github.com/footprintai/multikf/pkg/machine/kubectl"
+
+type MachineCURDFactory interface {
 	EnsureRuntime() error
 	NewMachine(string, MachineConfiger) (MachineCURD, error)
 	ListMachines() ([]MachineCURD, error)
@@ -12,7 +14,7 @@ type MachineConfiger interface {
 	GetGPUs() int
 	GetKubeAPIIP() string
 	GetExportPorts() []ExportPortPair
-	GetDefaultPassword() string
+	GetForceOverwriteConfig() bool
 }
 
 type ExportPortPair struct {
@@ -20,12 +22,26 @@ type ExportPortPair struct {
 	ContainerPort int
 }
 
+type MachineType string
+
+func (m MachineType) String() string {
+	return string(m)
+}
+
+const (
+	MachineTypeDocker  MachineType = "docker"
+	MachineTypeVagrant MachineType = "vagrant"
+)
+
 type MachineCURD interface {
 	Name() string
+	Type() MachineType
 	// HostDir returns the configuration files used for that particular machine under host
+	GetKubeCli() *kubectl.CLI
+	GetKubeConfig() string
 	HostDir() string
-	Up(forceCreate bool, withKubeflow bool) error
-	Destroy(force bool) error
+	Up() error
+	Destroy() error
 	Info() (*MachineInfo, error)
 	ExportKubeConfig(path string, forceOverwrite bool) error
 	Portforward(svc, namespace string, fromPort int) (int, error)

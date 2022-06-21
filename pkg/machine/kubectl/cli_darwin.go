@@ -1,7 +1,7 @@
 //go:build darwin
 // +build darwin
 
-package docker
+package kubectl
 
 var urlBinaryRes = binaryResource{
 	Os:      "darwin",

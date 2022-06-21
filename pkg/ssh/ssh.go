@@ -3,6 +3,7 @@ package ssh
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -34,6 +35,7 @@ func (s *SSHConn) Scp(fromRemotePath string, toHostPath string) error {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := client.CopyFromRemote(timeoutCtx, f, fromRemotePath); err != nil {
+		fmt.Printf("copy from remote err:%+v\n", err)
 		return err
 	}
 	return nil

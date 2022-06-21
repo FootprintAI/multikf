@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package docker
+package kubectl
 
 var urlBinaryRes = binaryResource{
 	Os:      "windows",

@@ -22,11 +22,21 @@ func ParseProvisioner(s string) (Provisioner, error) {
 	return Unknwon, errors.New("unknown provisioner")
 }
 
+func MustParseProvisioner(s string) Provisioner {
+	fmt.Printf("provisionerstr:%s\n", s)
+	p, err := ParseProvisioner(s)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
 const (
 	Unknwon Provisioner = "unknown"
 )
 
-func NewMachineFactory(provisioner Provisioner, logger log.Logger, dir string, verbose bool) (MachinesCURD, error) {
+func NewMachineFactory(provisioner Provisioner, logger log.Logger, dir string, verbose bool) (MachineCURDFactory, error) {
+	logger.V(1).Infof("allocate machine with provisioner:%+v\n", provisioner)
 	fac, found := provisionerRegister[provisioner]
 	if !found {
 		return nil, fmt.Errorf("provisioner:%s is not found\n", provisioner)
@@ -34,7 +44,7 @@ func NewMachineFactory(provisioner Provisioner, logger log.Logger, dir string, v
 	return fac(logger, dir, verbose), nil
 }
 
-type FactoryFunc func(logger log.Logger, dir string, verbose bool) MachinesCURD
+type FactoryFunc func(logger log.Logger, dir string, verbose bool) MachineCURDFactory
 
 var provisionerRegister = map[Provisioner]FactoryFunc{}
 
@@ -44,4 +54,10 @@ func RegisterProvisioner(p Provisioner, fac FactoryFunc) error {
 	}
 	provisionerRegister[p] = fac
 	return nil
+}
+
+func ForEachProvisioner(iter func(p Provisioner)) {
+	for p := range provisionerRegister {
+		iter(p)
+	}
 }
