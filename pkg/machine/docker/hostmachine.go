@@ -231,12 +231,12 @@ func (h *HostMachine) Portforward(svc, namespace string, fromPort int) (int, err
 		return 0, err
 	}
 	h.logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
-	return destPort, h.kubecli.Portforward(h.kubeconfig, svc, namespace, fromPort, destPort)
+	return destPort, h.kubecli.Portforward(h.GetKubeConfig(), svc, namespace, fromPort, destPort)
 }
 
-func (h *HostMachine) GetPods(namespace string) error {
-	if err := h.ensureKubeconfig(); err != nil {
-		return err
-	}
-	return h.kubecli.GetPods(h.kubeconfig, namespace)
-}
+//func (h *HostMachine) GetPods(namespace string) error {
+//	if err := h.ensureKubeconfig(); err != nil {
+//		return err
+//	}
+//	return h.kubecli.GetPods(h.kubeconfig, namespace)
+//}

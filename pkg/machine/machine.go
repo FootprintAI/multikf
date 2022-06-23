@@ -45,7 +45,6 @@ type MachineCURD interface {
 	Info() (*MachineInfo, error)
 	ExportKubeConfig(path string, forceOverwrite bool) error
 	Portforward(svc, namespace string, fromPort int) (int, error)
-	GetPods(namespace string) error
 }
 
 type MachineInfo struct {

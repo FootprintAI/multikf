@@ -166,7 +166,12 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 }
 
 func (v *VagrantMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
-	return 0, errors.New("todo")
+	destPort, err := machine.FindFreePort()
+	if err != nil {
+		return 0, err
+	}
+	h.logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
+	return destPort, h.kubecli.Portforward(v.GetKubeConfig(), svc, namespace, fromPort, destPort)
 }
 
 func (v *VagrantMachine) GetPods(namespace string) error {
