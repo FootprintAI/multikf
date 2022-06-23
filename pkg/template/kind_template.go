@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"io"
 
-	pkgtemplate "github.com/footprintai/multikf/pkg/template"
+	"github.com/footprintai/multikf/pkg/machine"
 )
 
 func NewKindTemplate() *KindFileTemplate {
@@ -30,8 +30,11 @@ func (k *KindFileTemplate) Execute(w io.Writer) error {
 }
 
 type kindConfig interface {
-	pkgtemplate.NameGetter
-	pkgtemplate.KubeAPIPortGetter
+	NameGetter
+	KubeAPIPortGetter
+	KubeAPIIPGetter
+	GpuGetter
+	ExportPortsGetter
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -41,13 +44,20 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	c := v.(kindConfig)
 	k.Name = c.GetName()
 	k.KubeAPIPort = c.GetKubeAPIPort()
+	k.KubeAPIIP = c.GetKubeAPIIP()
+	k.UseGPU = c.GetGPUs() > 0
+	k.ExportPorts = c.GetExportPorts()
+
 	return nil
 }
 
 type KindFileTemplate struct {
 	Name             string
+	KubeAPIIP        string
 	KubeAPIPort      int
+	UseGPU           bool
 	kindFileTemplate string
+	ExportPorts      []machine.ExportPortPair
 }
 
 var kindDefaultFileTemplate string = `
@@ -56,8 +66,21 @@ apiVersion: kind.x-k8s.io/v1alpha4
 name: {{.Name}}
 nodes:
 - role: control-plane
-  image: kindest/node:v1.20.7
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  image: kindest/node:v1.21.2
+  gpus: {{.UseGPU}}
+  {{if .ExportPorts}}extraPortMappings:{{end}}
+  {{- range $i, $p := .ExportPorts}}
+  - containerPort: {{ $p.ContainerPort }}
+    hostPort: {{ $p.HostPort }}
+    protocol: TCP
+  {{- end}}
 networking:
-  apiServerAddress: "0.0.0.0"
+  apiServerAddress: {{.KubeAPIIP}}
   apiServerPort: {{.KubeAPIPort}}
 `

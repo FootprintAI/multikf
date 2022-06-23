@@ -1,43 +1,40 @@
 package template
 
-import "github.com/footprintai/multikf/pkg/machine"
+import (
+	"github.com/footprintai/multikf/pkg/machine"
+	pkgtemplateconfig "github.com/footprintai/multikf/pkg/template/config"
+)
 
-type TemplateFileConfig struct {
-	// for host machine, we won't able to configure cpu/memory used, as kubelet inside a container can still access its host.
-	Name        string
-	SSHPort     int
-	KubeApiPort int
-	KubeApiIP   string
-	GPUs        int
-	ExportPorts []machine.ExportPortPair
-
-	DefaultPassword string
+type DockerHostmachineTemplateConfig struct {
+	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func (t *TemplateFileConfig) GetName() string {
-	return t.Name
+func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair) *DockerHostmachineTemplateConfig {
+	return &DockerHostmachineTemplateConfig{
+		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
+			name,
+			cpus,
+			memory,
+			sshport,
+			kubeApiPort,
+			kubeApiIP,
+			gpus,
+			exportPorts,
+		),
+	}
 }
 
-func (t *TemplateFileConfig) GetKubeAPIPort() int {
-	return t.KubeApiPort
+func (d *DockerHostmachineTemplateConfig) GetSSHPort() int {
+	// no ssh port for docker hostmachine
+	return -1
 }
 
-func (t *TemplateFileConfig) GetKubeAPIIP() string {
-	return t.KubeApiIP
+func (d *DockerHostmachineTemplateConfig) GetMemory() int {
+	// NOTE: for hostmachine like docker, we wont be able to control cpu/memory as kubelet will break the jail sent by dockerd
+	return -1
 }
 
-func (t *TemplateFileConfig) GetGPUs() int {
-	return t.GPUs
-}
-
-func (t *TemplateFileConfig) GetSSHPort() int {
-	return t.SSHPort
-}
-
-func (t *TemplateFileConfig) GetExportPorts() []machine.ExportPortPair {
-	return t.ExportPorts
-}
-
-func (t *TemplateFileConfig) GetDefaultPassword() string {
-	return t.DefaultPassword
+func (d *DockerHostmachineTemplateConfig) GetCPUs() int {
+	// NOTE: for hostmachine like docker, we wont be able to control cpu/memory as kubelet will break the jail sent by dockerd
+	return -1
 }

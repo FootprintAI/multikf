@@ -1,36 +1,29 @@
 package template
 
-// TemplateFileConfig is a union template file config
-type TemplateFileConfig struct {
-	Name string
-	// NOTE: only support virtualbox now
+import (
+	"github.com/footprintai/multikf/pkg/machine"
+	pkgtemplateconfig "github.com/footprintai/multikf/pkg/template/config"
+)
 
-	CPUs   int // number of cpus allocated
-	Memory int // number of bytes memory allocated
-
-	// NOTE: GPUs are not supported now
-	// GPUs string
-
-	SSHPort     int
-	KubeApiPort int
+type VagrantTemplateConfig struct {
+	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func (t *TemplateFileConfig) GetName() string {
-	return t.Name
+func NewVagrantTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair) *VagrantTemplateConfig {
+	return &VagrantTemplateConfig{
+		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
+			name,
+			cpus,
+			memory,
+			sshport,
+			kubeApiPort,
+			kubeApiIP,
+			gpus,
+			exportPorts,
+		),
+	}
 }
 
-func (t *TemplateFileConfig) GetKubeAPIPort() int {
-	return t.KubeApiPort
-}
-
-func (t *TemplateFileConfig) GetSSHPort() int {
-	return t.SSHPort
-}
-
-func (t *TemplateFileConfig) GetMemory() int {
-	return t.Memory
-}
-
-func (t *TemplateFileConfig) GetCPUs() int {
-	return t.CPUs
+func (v *VagrantTemplateConfig) GPUs() int {
+	return 0
 }

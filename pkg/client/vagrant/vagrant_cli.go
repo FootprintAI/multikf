@@ -6,16 +6,17 @@ import (
 
 	govagrant "github.com/bmatcuk/go-vagrant"
 	fssh "github.com/footprintai/multikf/pkg/ssh"
-	log "github.com/golang/glog"
 	"golang.org/x/crypto/ssh"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
-func NewVagrantCli(machineName string, vagrantMachineDir string, verbose bool) (*VagrantCli, error) {
+func NewVagrantCli(machineName string, vagrantMachineDir string, logger log.Logger, verbose bool) (*VagrantCli, error) {
 	cli, err := govagrant.NewVagrantClient(vagrantMachineDir)
 	if err != nil {
 		return nil, err
 	}
 	return &VagrantCli{
+		logger:  logger,
 		name:    machineName,
 		client:  cli,
 		Verbose: verbose,
@@ -24,19 +25,20 @@ func NewVagrantCli(machineName string, vagrantMachineDir string, verbose bool) (
 
 type VagrantCli struct {
 	name    string
+	logger  log.Logger
 	client  *govagrant.VagrantClient
 	Verbose bool
 }
 
 func (v *VagrantCli) Up() error {
-	log.Infof("vagrantmachine(%s): start machines...\n", v.name)
+	v.logger.V(0).Infof("vagrantmachine(%s): start machines...\n", v.name)
 	cmd := v.client.Up()
 	cmd.MachineName = v.name
 	cmd.Verbose = v.Verbose
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	log.Infof("vagrantmahcine(%s) is ready\n", v.name)
+	v.logger.V(0).Infof("vagrantmahcine(%s) is ready\n", v.name)
 	return nil
 }
 
@@ -47,6 +49,7 @@ func (vs vagrantStatus) String() string {
 }
 
 const (
+	vagrantStatusInvalid    vagrantStatus = "invalid_status"
 	vagrantStatusNotCreated vagrantStatus = "not_created"
 	vagrantStatusUp         vagrantStatus = "up"
 	vagrantStatusRunning    vagrantStatus = "running"
@@ -57,25 +60,25 @@ func (v *VagrantCli) Status() string {
 	cmd.MachineName = v.name
 	cmd.Verbose = v.Verbose
 	if err := cmd.Run(); err != nil {
-		return "invalid status"
+		return vagrantStatusInvalid.String()
 	}
 	return cmd.StatusResponse.Status[v.name]
 }
 
-func (v *VagrantCli) TryUp(forceDeleteIfNecessary bool) error {
+func (v *VagrantCli) TryUp() error {
 	status := v.Status()
-	log.Infof("vagrantmachine(%s): status:%s\n", v.name, status)
+	v.logger.V(0).Infof("vagrantmachine(%s): status:%s\n", v.name, status)
 
-	if status == vagrantStatusNotCreated.String() {
+	if status == vagrantStatusNotCreated.String() || status == vagrantStatusInvalid.String() {
 		return v.Up()
 	}
 	if status == vagrantStatusUp.String() || status == vagrantStatusRunning.String() {
-		log.Infof("vagrantmachine(%s) already up and running\n", v.name)
+		v.logger.V(0).Infof("vagrantmachine(%s) already up and running\n", v.name)
 		return nil
 	}
-	log.Infof("vagrantmachine(%s) clean up vagrant previous state with force=%v\n", v.name, forceDeleteIfNecessary)
+	v.logger.V(0).Infof("vagrantmachine(%s) clean up vagrant previous state\n", v.name)
 	v.Destroy()
-	return v.TryUp(forceDeleteIfNecessary)
+	return v.TryUp()
 }
 
 func (v *VagrantCli) Destroy() error {

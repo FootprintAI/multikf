@@ -3,8 +3,8 @@ package vagrant
 import (
 	"github.com/footprintai/multikf/assets"
 	vagranttemplates "github.com/footprintai/multikf/pkg/machine/vagrant/template"
+	pkgtemplate "github.com/footprintai/multikf/pkg/template"
 	templatefs "github.com/footprintai/multikf/pkg/template/fs"
-	//log "github.com/golang/glog"
 )
 
 func NewVagrantFolder(folderpath string) *VagrantFolder {
@@ -17,12 +17,15 @@ type VagrantFolder struct {
 	folder *templatefs.Folder
 }
 
-func (v *VagrantFolder) GenerateVagrantFiles(tmplConfig *vagranttemplates.TemplateFileConfig) error {
+func (v *VagrantFolder) GenerateVagrantFiles(tmplConfig *vagranttemplates.VagrantTemplateConfig) error {
 	memoryFileFs := templatefs.NewMemoryFilesFs()
-	if err := memoryFileFs.Generate(tmplConfig, vagranttemplates.NewKindTemplate(), vagranttemplates.NewDefaultVagrantTemplate()); err != nil {
+	if err := memoryFileFs.Generate(tmplConfig, vagranttemplates.NewDefaultVagrantTemplate()); err != nil {
 		return err
 	}
-	if err := v.folder.DumpFiles(memoryFileFs.FS(), assets.BootstrapFs); err != nil {
+	if err := memoryFileFs.Generate(tmplConfig, pkgtemplate.NewKindTemplate()); err != nil {
+		return err
+	}
+	if err := v.folder.DumpFiles(true, memoryFileFs.FS(), assets.BootstrapFs); err != nil {
 		return err
 	}
 	return nil

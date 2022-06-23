@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package docker
+package kubectl
 
 var urlBinaryRes = binaryResource{
 	Os:      "linux",
