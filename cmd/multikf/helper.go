@@ -1,6 +1,7 @@
 package multikf
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -8,6 +9,38 @@ import (
 	"github.com/footprintai/multikf/pkg/machine/plugins"
 	"sigs.k8s.io/kind/pkg/log"
 )
+
+func findMachineByName(name string, logger log.Logger) (machine.MachineCURD, error) {
+	//for _, provisioner := []machine.Provisioner {}
+	var found machine.MachineCURD
+	var err error = errors.New("machine: not found")
+
+	machine.ForEachProvisioner(func(p machine.Provisioner) {
+		vag, err := machine.NewMachineFactory(
+			p,
+			logger,
+			viperConfigKeyRootDir.GetString(),
+			viperConfigKeyVerbose.GetBool(),
+		)
+		if err != nil {
+			logger.Errorf("machine.find: failed, err:%+v\n", err)
+			return
+		}
+		machines, err := vag.ListMachines()
+		if err != nil {
+			logger.Errorf("machine.find: failed, err:%+v\n", err)
+			return
+		}
+		for _, machine := range machines {
+			if machine.Name() == name {
+				found = machine
+				err = nil
+				return
+			}
+		}
+	})
+	return found, err
+}
 
 func newMachineFactoryWithProvisioner(p machine.Provisioner, logger log.Logger) (machine.MachineCURDFactory, error) {
 	vag, err := machine.NewMachineFactory(

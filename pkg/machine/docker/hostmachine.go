@@ -26,7 +26,7 @@ func NewHostMachines(logger log.Logger, hostDir string, verbose bool) machine.Ma
 }
 
 func (hm *HostMachines) EnsureRuntime() error {
-	_, status, err := machinecmd.NewCmd(hm.logger, hm.verbose).Run("docker", "version")
+	_, status, err := machinecmd.NewCmd(hm.logger).Run("docker", "version")
 	if err != nil {
 		return err
 	}
@@ -221,22 +221,3 @@ func (h *HostMachine) Info() (*machine.MachineInfo, error) {
 		Status:  status,
 	}, nil
 }
-
-func (h *HostMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
-	if err := h.ensureKubeconfig(); err != nil {
-		return 0, err
-	}
-	destPort, err := machine.FindFreePort()
-	if err != nil {
-		return 0, err
-	}
-	h.logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
-	return destPort, h.kubecli.Portforward(h.GetKubeConfig(), svc, namespace, fromPort, destPort)
-}
-
-//func (h *HostMachine) GetPods(namespace string) error {
-//	if err := h.ensureKubeconfig(); err != nil {
-//		return err
-//	}
-//	return h.kubecli.GetPods(h.kubeconfig, namespace)
-//}

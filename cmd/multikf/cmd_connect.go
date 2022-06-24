@@ -18,27 +18,17 @@ func NewConnectCommand(logger log.Logger, ioStreams genericclioptions.IOStreams)
 }
 
 func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	var (
-		provisionerStr string // provider specifies the underly privisoner for virtual machine, either docker (under host) or vagrant
-	)
 	handle := func(machineName string) error {
-		vag, err := newMachineFactoryWithProvisioner(
-			machine.MustParseProvisioner(provisionerStr),
-			logger,
-		)
+		m, err := findMachineByName(machineName, logger)
 		if err != nil {
 			return err
 		}
-		m, err := vag.NewMachine(machineName, nil)
+		destPort, err := machine.FindFreePort()
 		if err != nil {
 			return err
 		}
-		_, err = m.Portforward("svc/istio-ingressgateway", "istio-system", 80)
-		if err != nil {
-			logger.Errorf("connect: unable to connect %s failed, err:%+v\n", machineName, err)
-			return err
-		}
-		return nil
+		logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
+		return m.GetKubeCli().Portforward(m.GetKubeConfig(), "svc/istio-ingressgateway", "istio-system", 80, destPort)
 	}
 	cmd := &cobra.Command{
 		Use:   "kubeflow",
@@ -47,7 +37,5 @@ func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IO
 			return handle(args[0])
 		},
 	}
-
-	cmd.Flags().StringVar(&provisionerStr, "provisioner", "docker", "provisioner, possible value: docker and vagrant")
 	return cmd
 }

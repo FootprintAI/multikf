@@ -4,12 +4,13 @@ import (
 	goflag "flag"
 	"os"
 
-	_ "github.com/footprintai/multikf/pkg/machine/docker"
-	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	_ "github.com/footprintai/multikf/pkg/machine/docker"
+	_ "github.com/footprintai/multikf/pkg/machine/vagrant"
 )
 
 var (
@@ -49,8 +50,20 @@ func initConfig() {
 }
 
 func Main() {
+
+	logger := cmd.NewLogger()
+	if verbose {
+		type verbosity interface {
+			SetVerbosity(verbosity log.Level)
+		}
+		_, ok := logger.(verbosity)
+		if ok {
+			logger.(verbosity).SetVerbosity(log.Level(1))
+		}
+	}
+
 	NewRootCommand(
-		cmd.NewLogger(),
+		logger,
 		genericclioptions.IOStreams{
 			In:     os.Stdin,
 			Out:    os.Stdout,

@@ -7,22 +7,18 @@ import (
 	"github.com/footprintai/multikf/pkg/machine/ioutil"
 )
 
-func NewCmd(logger log.Logger, verbose bool) *Cmd {
+func NewCmd(logger log.Logger) *Cmd {
 	return &Cmd{
-		logger:  logger,
-		verbose: verbose,
+		logger: logger,
 	}
 }
 
 type Cmd struct {
-	logger  log.Logger
-	verbose bool
+	logger log.Logger
 }
 
 func (c *Cmd) Run(cmdAndArgs ...string) (ioutil.StreamReader, <-chan cmd.Status, error) {
-	if c.verbose {
-		c.logger.V(1).Infof("cmd->%s\n", cmdAndArgs)
-	}
+	c.logger.V(1).Infof("cmd->%s\n", cmdAndArgs)
 	cmdOptions := cmd.Options{
 		Buffered:  false,
 		Streaming: true,

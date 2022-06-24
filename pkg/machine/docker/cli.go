@@ -60,5 +60,5 @@ func (cli *DockerCli) RemoteExec(containername ContainerName, cmd string) (resp 
 }
 
 func (cli *DockerCli) runCmd(cmdAndArgs []string) (ioutil.StreamReader, <-chan cmd.Status, error) {
-	return machinecmd.NewCmd(cli.logger, cli.verbose).Run(cmdAndArgs...)
+	return machinecmd.NewCmd(cli.logger).Run(cmdAndArgs...)
 }

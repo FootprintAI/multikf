@@ -1,7 +1,6 @@
 package vagrant
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -36,7 +35,7 @@ type VagrantMachines struct {
 }
 
 func (vm *VagrantMachines) EnsureRuntime() error {
-	_, status, err := machinecmd.NewCmd(vm.logger, vm.verbose).Run("vagrant", "--version")
+	_, status, err := machinecmd.NewCmd(vm.logger).Run("vagrant", "--version")
 	if err != nil {
 		return err
 	}
@@ -163,19 +162,6 @@ func (v *VagrantMachine) Info() (*machine.MachineInfo, error) {
 		GpuInfo: &machine.GpuInfo{},
 		Status:  status,
 	}, nil
-}
-
-func (v *VagrantMachine) Portforward(svc, namespace string, fromPort int) (int, error) {
-	destPort, err := machine.FindFreePort()
-	if err != nil {
-		return 0, err
-	}
-	h.logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
-	return destPort, h.kubecli.Portforward(v.GetKubeConfig(), svc, namespace, fromPort, destPort)
-}
-
-func (v *VagrantMachine) GetPods(namespace string) error {
-	return errors.New("todo")
 }
 
 func (v *VagrantMachine) Name() string {

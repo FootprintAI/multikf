@@ -293,5 +293,5 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 }
 
 func (cli *CLI) runCmd(cmdAndArgs []string) (ioutil.StreamReader, <-chan gocmd.Status, error) {
-	return cmd.NewCmd(cli.logger, cli.verbose).Run(cmdAndArgs...)
+	return cmd.NewCmd(cli.logger).Run(cmdAndArgs...)
 }
