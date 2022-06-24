@@ -23,7 +23,7 @@ func ParseProvisioner(s string) (Provisioner, error) {
 }
 
 func MustParseProvisioner(s string) Provisioner {
-	fmt.Printf("provisionerstr:%s\n", s)
+	//fmt.Printf("provisionerstr:%s\n", s)
 	p, err := ParseProvisioner(s)
 	if err != nil {
 		panic(err)
@@ -49,6 +49,7 @@ type FactoryFunc func(logger log.Logger, dir string, verbose bool) MachineCURDFa
 var provisionerRegister = map[Provisioner]FactoryFunc{}
 
 func RegisterProvisioner(p Provisioner, fac FactoryFunc) error {
+	fmt.Printf("register provisoner:%s\n", p.String())
 	if _, found := provisionerRegister[p]; found {
 		return fmt.Errorf("duplicated register proviosner:%s\n", p)
 	}

@@ -13,7 +13,7 @@ import (
 func findMachineByName(name string, logger log.Logger) (machine.MachineCURD, error) {
 	//for _, provisioner := []machine.Provisioner {}
 	var found machine.MachineCURD
-	var err error = errors.New("machine: not found")
+	var outErr error = errors.New("machine: not found")
 
 	machine.ForEachProvisioner(func(p machine.Provisioner) {
 		vag, err := machine.NewMachineFactory(
@@ -34,12 +34,12 @@ func findMachineByName(name string, logger log.Logger) (machine.MachineCURD, err
 		for _, machine := range machines {
 			if machine.Name() == name {
 				found = machine
-				err = nil
+				outErr = nil
 				return
 			}
 		}
 	})
-	return found, err
+	return found, outErr
 }
 
 func newMachineFactoryWithProvisioner(p machine.Provisioner, logger log.Logger) (machine.MachineCURDFactory, error) {
