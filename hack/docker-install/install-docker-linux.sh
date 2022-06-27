@@ -6,8 +6,6 @@ if (( $EUID != 0 )); then
    exit
 fi
 
-echo "[deprecation] this script has been moved to hack/docker-install/install-docker-linux/sh"
-
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
