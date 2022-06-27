@@ -49,7 +49,7 @@ type FactoryFunc func(logger log.Logger, dir string, verbose bool) MachineCURDFa
 var provisionerRegister = map[Provisioner]FactoryFunc{}
 
 func RegisterProvisioner(p Provisioner, fac FactoryFunc) error {
-	fmt.Printf("register provisoner:%s\n", p.String())
+	//fmt.Printf("register provisoner:%s\n", p.String())
 	if _, found := provisionerRegister[p]; found {
 		return fmt.Errorf("duplicated register proviosner:%s\n", p)
 	}

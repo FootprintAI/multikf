@@ -43,6 +43,9 @@ func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 	_, hasKf := pluginAndFiles[TypePluginKubeflow]
 	if hasKf {
 		err = m.GetKubeCli().InstallKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), pluginAndFiles[TypePluginKubeflow]))
+		if err == nil {
+			err = m.GetKubeCli().PatchKubeflow(m.GetKubeConfig())
+		}
 	}
 	if err != nil {
 		return err
