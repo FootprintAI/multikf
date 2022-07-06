@@ -35,6 +35,7 @@ type kindConfig interface {
 	KubeAPIIPGetter
 	GpuGetter
 	ExportPortsGetter
+	AuditEnabler
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -47,17 +48,21 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	k.KubeAPIIP = c.GetKubeAPIIP()
 	k.UseGPU = c.GetGPUs() > 0
 	k.ExportPorts = c.GetExportPorts()
+	k.AuditEnabled = c.AuditEnabled()
+	k.AuditFileAbsolutePath = c.AuditFileAbsolutePath()
 
 	return nil
 }
 
 type KindFileTemplate struct {
-	Name             string
-	KubeAPIIP        string
-	KubeAPIPort      int
-	UseGPU           bool
-	kindFileTemplate string
-	ExportPorts      []machine.ExportPortPair
+	Name                  string
+	KubeAPIIP             string
+	KubeAPIPort           int
+	UseGPU                bool
+	kindFileTemplate      string
+	ExportPorts           []machine.ExportPortPair
+	AuditEnabled          bool
+	AuditFileAbsolutePath string
 }
 
 var kindDefaultFileTemplate string = `
@@ -67,6 +72,30 @@ name: {{.Name}}
 nodes:
 - role: control-plane
   kubeadmConfigPatches:
+  {{- if .AuditEnabled}}
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+      # enable auditing flags on the API server
+      extraArgs:
+        audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
+        audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
+        audit-log-maxage: "30"
+        audit-log-maxbackup: "10"
+        audit-log-maxsize: "100"
+      # mount new files / directories on the control plane
+      extraVolumes:
+        - name: audit-policies
+          hostPath: /etc/kubernetes/policies
+          mountPath: /etc/kubernetes/policies
+          readOnly: true
+          pathType: "DirectoryOrCreate"
+        - name: "audit-logs"
+          hostPath: "/var/log/kubernetes"
+          mountPath: "/var/log/kubernetes"
+          readOnly: false
+          pathType: DirectoryOrCreate
+  {{- end}}
   - |
     kind: InitConfiguration
     nodeRegistration:
@@ -79,6 +108,13 @@ nodes:
   - containerPort: {{ $p.ContainerPort }}
     hostPort: {{ $p.HostPort }}
     protocol: TCP
+  {{- end}}
+  {{- if .AuditEnabled}}
+  # mount the local file on the control plane
+  extraMounts:
+  - hostPath: {{.AuditFileAbsolutePath}}
+    containerPath: /etc/kubernetes/policies/audit-policy.yaml
+    readOnly: true
   {{- end}}
 networking:
   apiServerAddress: {{.KubeAPIIP}}

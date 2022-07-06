@@ -17,19 +17,29 @@ type Cmd struct {
 	logger log.Logger
 }
 
-func (c *Cmd) Run(cmdAndArgs ...string) (ioutil.StreamReader, <-chan cmd.Status, error) {
+func (c *Cmd) Run(cmdAndArgs ...string) (*ioutil.CmdOutputStream, <-chan cmd.Status, error) {
 	c.logger.V(1).Infof("cmd->%s\n", cmdAndArgs)
 	cmdOptions := cmd.Options{
 		Buffered:  false,
 		Streaming: true,
 	}
 	runcmd := cmd.NewCmdOptions(cmdOptions, cmdAndArgs[0], cmdAndArgs[1:]...)
-	status := runcmd.Start()
-	// run and output stderr
-	for stderrline := range runcmd.Stderr {
-		c.logger.V(1).Infof("%s\n", stderrline)
-	}
-	//stat := <-runStatus
+	statusChan1 := make(chan cmd.Status, 1)
+	statusChan2 := make(chan cmd.Status, 1)
+	go newChanForwarder(runcmd.Start(), statusChan1, statusChan2)
 
-	return ioutil.NewOutputStream(c.logger, runcmd.Stdout), status, nil
+	cinfo := &ioutil.CommandInfo{
+		CommandStatus: statusChan1,
+		Command:       runcmd,
+	}
+
+	return ioutil.NewCmdOutputStream(c.logger, cinfo), statusChan2, nil
+}
+
+func newChanForwarder(src <-chan cmd.Status, dests ...chan<- cmd.Status) {
+	status := <-src
+	for _, dest := range dests {
+		dest <- status
+	}
+	return
 }

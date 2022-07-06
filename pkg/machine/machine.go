@@ -15,6 +15,7 @@ type MachineConfiger interface {
 	GetKubeAPIIP() string
 	GetExportPorts() []ExportPortPair
 	GetForceOverwriteConfig() bool
+	AuditEnabled() bool
 }
 
 type ExportPortPair struct {

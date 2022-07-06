@@ -204,6 +204,8 @@ func (v *VagrantMachine) prepareFiles() error {
 		v.options.GetKubeAPIIP(),
 		v.options.GetGPUs(),
 		v.options.GetExportPorts(),
+		v.options.AuditEnabled(),
+		"/tmp/audit-policy.yaml", /*for vagrant, we will copy the file under /tmp and run local installation*/
 	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)

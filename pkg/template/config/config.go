@@ -3,26 +3,30 @@ package config
 import "github.com/footprintai/multikf/pkg/machine"
 
 type DefaultTemplateConfig struct {
-	name        string
-	cpus        int // number of cpus allocated
-	memory      int // number of bytes memory allocated
-	sshPort     int
-	kubeApiPort int
-	kubeApiIP   string
-	gpus        int
-	exportPorts []machine.ExportPortPair
+	name                  string
+	cpus                  int // number of cpus allocated
+	memory                int // number of bytes memory allocated
+	sshPort               int
+	kubeApiPort           int
+	kubeApiIP             string
+	gpus                  int
+	exportPorts           []machine.ExportPortPair
+	auditEnabled          bool
+	auditFileAbsolutePath string
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
-		name:        name,
-		cpus:        cpus,
-		memory:      memory,
-		sshPort:     sshport,
-		kubeApiPort: kubeApiPort,
-		kubeApiIP:   kubeApiIP,
-		gpus:        gpus,
-		exportPorts: exportPorts,
+		name:                  name,
+		cpus:                  cpus,
+		memory:                memory,
+		sshPort:               sshport,
+		kubeApiPort:           kubeApiPort,
+		kubeApiIP:             kubeApiIP,
+		gpus:                  gpus,
+		exportPorts:           exportPorts,
+		auditEnabled:          auditEnabled,
+		auditFileAbsolutePath: auditFileAbsolutePath,
 	}
 }
 
@@ -56,4 +60,12 @@ func (t *DefaultTemplateConfig) GetSSHPort() int {
 
 func (t *DefaultTemplateConfig) GetExportPorts() []machine.ExportPortPair {
 	return t.exportPorts
+}
+
+func (t *DefaultTemplateConfig) AuditEnabled() bool {
+	return t.auditEnabled
+}
+
+func (t *DefaultTemplateConfig) AuditFileAbsolutePath() string {
+	return t.auditFileAbsolutePath
 }

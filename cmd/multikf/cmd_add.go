@@ -20,6 +20,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		withKubeflow                bool   // install with kubeflow components
 		withKubeflowDefaultPassword string // with kubeflow defaultpassword
 		withIP                      string // with specific IP
+		withAudit                   bool   // with audit enabled
 		exportPorts                 string // export ports on hostmachine
 		forceOverwrite              bool   // force overwrite existing config
 	)
@@ -51,6 +52,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			kubeAPIIP:      withIP,
 			exportPorts:    exportPorts,
 			forceOverwrite: forceOverwrite,
+			auditEnabled:   withAudit,
 		})
 		if err != nil {
 			return err
@@ -80,6 +82,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	cmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite existing config. (default: false)")
 	cmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
+	cmd.Flags().BoolVar(&withAudit, "with_audit", true, "enable k8s auditing (default: true)")
 	cmd.Flags().StringVar(&withKubeflowDefaultPassword, "with_password", "12341234", "with a specific password for default user (default: 12341234)")
 	cmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
 	cmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")

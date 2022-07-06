@@ -5,26 +5,31 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-cmd/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
 type StreamReader interface {
-	Stdout() error              // stream outputs to stdout
 	Read(b []byte) (int, error) // read stream to buffer with Reader
 }
 
-// outputStream implements io.Reader by wrapping the line channel
-type outputStream struct {
+// CmdOutputStream implements io.Reader by wrapping the line channel
+type CmdOutputStream struct {
 	logger log.Logger
-	ch     chan string
+	cInfo  *CommandInfo
 }
 
-func NewOutputStream(logger log.Logger, ch chan string) *outputStream {
-	return &outputStream{ch: ch, logger: logger}
+type CommandInfo struct {
+	CommandStatus <-chan cmd.Status
+	Command       *cmd.Cmd
 }
 
-func (o *outputStream) Read(b []byte) (int, error) {
-	out, more := <-o.ch
+func NewCmdOutputStream(logger log.Logger, cInfo *CommandInfo) *CmdOutputStream {
+	return &CmdOutputStream{cInfo: cInfo, logger: logger}
+}
+
+func (o *CmdOutputStream) Read(b []byte) (int, error) {
+	out, more := <-o.cInfo.Command.Stdout
 	if !more {
 		return 0, io.EOF
 	}
@@ -36,8 +41,19 @@ func (o *outputStream) Read(b []byte) (int, error) {
 	return n + 1, nil
 }
 
-func (o *outputStream) Stdout() error {
-	for lineLog := range o.ch {
+func StderrOnError(o *CmdOutputStream) error {
+
+	go func() {
+		status := <-o.cInfo.CommandStatus
+		if status.Exit != 0 {
+			// process exit abnormally, display stderr
+			for lineLog := range o.cInfo.Command.Stderr {
+				o.logger.V(0).Infof("%s\n", lineLog)
+			}
+		}
+	}()
+
+	for lineLog := range o.cInfo.Command.Stdout {
 		o.logger.V(1).Infof("%s\n", lineLog)
 	}
 	return nil
