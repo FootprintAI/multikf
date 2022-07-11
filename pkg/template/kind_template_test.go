@@ -26,8 +26,12 @@ func (s staticConfig) GetGPUs() int {
 	return 1
 }
 
-func (s staticConfig) GetAuditEnabled() bool {
+func (s staticConfig) AuditEnabled() bool {
 	return false
+}
+
+func (s staticConfig) AuditFileAbsolutePath() string {
+	return ""
 }
 
 func (s staticConfig) GetExportPorts() []machine.ExportPortPair {
@@ -104,8 +108,12 @@ func (s auditConfig) GetExportPorts() []machine.ExportPortPair {
 	}
 }
 
-func (s auditConfig) GetAuditEnabled() bool {
+func (s auditConfig) AuditEnabled() bool {
 	return true
+}
+
+func (s auditConfig) AuditFileAbsolutePath() string {
+	return "foo.bar.yaml"
 }
 
 func TestKindTemplateWithAudit(t *testing.T) {
@@ -130,6 +138,9 @@ nodes:
       extraArgs:
         audit-log-path: /var/log/kubernetes/kube-apiserver-audit.log
         audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
+        audit-log-maxage: "30"
+        audit-log-maxbackup: "10"
+        audit-log-maxsize: "100"
       # mount new files / directories on the control plane
       extraVolumes:
         - name: audit-policies
@@ -142,6 +153,7 @@ nodes:
           mountPath: "/var/log/kubernetes"
           readOnly: false
           pathType: DirectoryOrCreate
+  - |
     kind: InitConfiguration
     nodeRegistration:
       kubeletExtraArgs:
@@ -154,7 +166,7 @@ nodes:
     protocol: TCP
   # mount the local file on the control plane
   extraMounts:
-  - hostPath: ./audit-policy.yaml
+  - hostPath: foo.bar.yaml
     containerPath: /etc/kubernetes/policies/audit-policy.yaml
     readOnly: true
 networking:
