@@ -18,7 +18,7 @@ type HostFolder struct {
 
 func (h *HostFolder) GenerateFiles(tmplConfig *hosttemplates.DockerHostmachineTemplateConfig) error {
 	memoryFileFs := templatefs.NewMemoryFilesFs()
-	if err := memoryFileFs.Generate(tmplConfig, pkgtemplate.NewKindTemplate()); err != nil {
+	if err := memoryFileFs.Generate(tmplConfig, pkgtemplate.NewKindTemplate(), pkgtemplate.NewAuditPolicyTemplate()); err != nil {
 		return err
 	}
 	/*

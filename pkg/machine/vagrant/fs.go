@@ -22,7 +22,7 @@ func (v *VagrantFolder) GenerateVagrantFiles(tmplConfig *vagranttemplates.Vagran
 	if err := memoryFileFs.Generate(tmplConfig, vagranttemplates.NewDefaultVagrantTemplate()); err != nil {
 		return err
 	}
-	if err := memoryFileFs.Generate(tmplConfig, pkgtemplate.NewKindTemplate()); err != nil {
+	if err := memoryFileFs.Generate(tmplConfig, pkgtemplate.NewKindTemplate(), pkgtemplate.NewAuditPolicyTemplate()); err != nil {
 		return err
 	}
 	if err := v.folder.DumpFiles(true, memoryFileFs.FS(), assets.BootstrapFs); err != nil {

@@ -61,7 +61,8 @@ type DefaultVagrantFileTemplate struct {
 var vagrantFileDefaultTemplate string = `
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"
-  config.vm.provision "file", source: "kind-config.yaml", destination: "/tmp/kind-config.yaml"
+  config.vm.provision "file", source: "kind-config.yaml", destination: "kind-config.yaml"
+  config.vm.provision "file", source: "audit-policy.yaml", destination: "/tmp/audit-policy.yaml"
   config.vm.provision :shell, path: "bootstrap/bootstrap.sh"
   config.vm.provision :shell, path: "bootstrap/provision-cluster.sh"
   config.vm.network :forwarded_port, guest: {{.KubeAPIPort}}, guest_ip: "0.0.0.0", host: {{.KubeAPIPort}}

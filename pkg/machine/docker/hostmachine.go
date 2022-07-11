@@ -114,6 +114,8 @@ func (h *HostMachine) prepareFiles() error {
 		h.options.GetKubeAPIIP(),
 		h.options.GetGPUs(),
 		h.options.GetExportPorts(),
+		h.options.AuditEnabled(),
+		filepath.Join(h.hostMachineDir, "audit-policy.yaml"),
 	)
 
 	vfolder := NewHostFolder(h.hostMachineDir)

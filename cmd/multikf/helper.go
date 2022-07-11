@@ -67,6 +67,7 @@ type machineConfig struct {
 	exportPorts     string
 	defaultPassword string
 	forceOverwrite  bool
+	auditEnabled    bool
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -84,6 +85,10 @@ func (m machineConfig) GetGPUs() int {
 
 func (m machineConfig) GetKubeAPIIP() string {
 	return m.kubeAPIIP
+}
+
+func (m machineConfig) AuditEnabled() bool {
+	return m.auditEnabled
 }
 
 func (m machineConfig) GetExportPorts() []machine.ExportPortPair {

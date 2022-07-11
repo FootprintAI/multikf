@@ -141,7 +141,7 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 	if err != nil {
 		return err
 	}
-	return sr.Stdout()
+	return ioutil.StderrOnError(sr)
 }
 
 //func (cli *CLI) InstallRequiredPkgs(containername ContainerName) error {
@@ -169,7 +169,7 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 		if err != nil {
 			return err
 		}
-		sr.Stdout()
+		ioutil.StderrOnError(sr)
 
 		ps := <-status
 		cli.logger.V(1).Infof("kf installation, ps code:%+v\n", ps.Exit)
@@ -211,7 +211,7 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 		if err != nil {
 			return err
 		}
-		sr.Stdout()
+		ioutil.StderrOnError(sr)
 		time.Sleep(3 * time.Second)
 
 	}
@@ -234,7 +234,7 @@ func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toP
 	if err != nil {
 		return err
 	}
-	return sr.Stdout()
+	return ioutil.StderrOnError(sr)
 }
 
 func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
@@ -254,7 +254,7 @@ func (cli *CLI) GetPods(kindConfigfile string, namespace string) error {
 	if err != nil {
 		return err
 	}
-	return sr.Stdout()
+	return ioutil.StderrOnError(sr)
 }
 
 func (cli *CLI) RemoveCluster(clustername string) error {
@@ -269,7 +269,7 @@ func (cli *CLI) RemoveCluster(clustername string) error {
 	if err != nil {
 		return err
 	}
-	return sr.Stdout()
+	return ioutil.StderrOnError(sr)
 
 }
 
@@ -292,6 +292,6 @@ func (cli *CLI) GetKubeConfig(clustername string, exportLocalFilePath string) er
 	return pkgioutil.WriteFile(exportLocalFilePath, contentBlob, 0600)
 }
 
-func (cli *CLI) runCmd(cmdAndArgs []string) (ioutil.StreamReader, <-chan gocmd.Status, error) {
+func (cli *CLI) runCmd(cmdAndArgs []string) (*ioutil.CmdOutputStream, <-chan gocmd.Status, error) {
 	return cmd.NewCmd(cli.logger).Run(cmdAndArgs...)
 }

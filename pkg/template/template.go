@@ -44,3 +44,8 @@ type ExportPortsGetter interface {
 type DefaultPasswordGetter interface {
 	GetDefaultPassword() string
 }
+
+type AuditEnabler interface {
+	AuditEnabled() bool
+	AuditFileAbsolutePath() string
+}
