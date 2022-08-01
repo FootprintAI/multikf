@@ -126,10 +126,16 @@ func (m machineConfig) GetForceOverwriteConfig() bool {
 
 type kubeflowPlugin struct {
 	withKubeflowDefaultPassword string
+	kubeflowVersion             plugins.TypePluginVersion
 }
 
 func (k kubeflowPlugin) PluginType() plugins.TypePlugin {
 	return plugins.TypePluginKubeflow
+}
+
+func (k kubeflowPlugin) PluginVersion() plugins.TypePluginVersion {
+	return k.kubeflowVersion
+
 }
 
 func (k kubeflowPlugin) GetDefaultPassword() string {
