@@ -18,6 +18,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		memoryInG                   int    // number of Gigabytes allocated to the guest machine
 		useGPUs                     int    // use GPU resources
 		withKubeflow                bool   // install with kubeflow components
+		withKubeflowVersion         string // with kubeflow version
 		withKubeflowDefaultPassword string // with kubeflow defaultpassword
 		withIP                      string // with specific IP
 		withAudit                   bool   // with audit enabled
@@ -64,7 +65,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		var installedPlugins []plugins.Plugin
 		if withKubeflow {
 			installedPlugins = append(installedPlugins,
-				kubeflowPlugin{withKubeflowDefaultPassword: withKubeflowDefaultPassword},
+				kubeflowPlugin{withKubeflowDefaultPassword: withKubeflowDefaultPassword, kubeflowVersion: plugins.NewTypePluginVersion(withKubeflowVersion)},
 			)
 		}
 		return plugins.AddPlugins(m, installedPlugins...)
@@ -82,6 +83,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	cmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite existing config. (default: false)")
 	cmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
+	cmd.Flags().StringVar(&withKubeflowVersion, "kubeflow_version", "v1.4", "kubeflow version v1.4/v1.5.1")
 	cmd.Flags().BoolVar(&withAudit, "with_audit", true, "enable k8s auditing (default: true)")
 	cmd.Flags().StringVar(&withKubeflowDefaultPassword, "with_password", "12341234", "with a specific password for default user (default: 12341234)")
 	cmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")

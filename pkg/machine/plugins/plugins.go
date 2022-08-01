@@ -15,8 +15,37 @@ const (
 	TypePluginKubeflow TypePlugin = "kubeflow"
 )
 
+type TypePluginVersion string
+
+func (t TypePluginVersion) String() string {
+	return string(t)
+}
+
+type kubeflowTemplateMakerFunc func() *kubeflowplugin.KubeflowFileTemplate
+
+var (
+	noVersion         = NewTypePluginVersion("v0.0.0")
+	availableVersions = map[TypePluginVersion]kubeflowTemplateMakerFunc{
+		NewTypePluginVersion("v1.4"):   kubeflowplugin.NewKubeflow14Template,
+		NewTypePluginVersion("v1.5.1"): kubeflowplugin.NewKubeflow15Template,
+	}
+)
+
+func NewTypePluginVersion(s string) TypePluginVersion {
+	return TypePluginVersion(s)
+}
+
+func KubeflowPluginVersionTemplate(s TypePluginVersion) (TypePluginVersion, *kubeflowplugin.KubeflowFileTemplate) {
+	templateMaker, hasVersion := availableVersions[s]
+	if !hasVersion {
+		return noVersion, nil
+	}
+	return s, templateMaker()
+}
+
 type Plugin interface {
 	PluginType() TypePlugin
+	PluginVersion() TypePluginVersion
 }
 
 func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
@@ -27,11 +56,14 @@ func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 		switch plugin.PluginType() {
 		case TypePluginKubeflow:
 			// handle kubeflow plugins
-			temp := kubeflowplugin.NewKubeflowTemplate()
-			if err := memFs.Generate(plugin, temp); err != nil {
+			_, tmpl := KubeflowPluginVersionTemplate(plugin.PluginVersion())
+			if tmpl == nil {
+				return errors.New("plugins: no version found")
+			}
+			if err := memFs.Generate(plugin, tmpl); err != nil {
 				return err
 			}
-			pluginAndFiles[plugin.PluginType()] = temp.Filename()
+			pluginAndFiles[plugin.PluginType()] = tmpl.Filename()
 		default:
 			return errors.New("plugins: no available plugins")
 		}

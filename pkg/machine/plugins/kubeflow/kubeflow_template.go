@@ -10,9 +10,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func NewKubeflowTemplate() *KubeflowFileTemplate {
+func NewKubeflow14Template() *KubeflowFileTemplate {
+	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.4.1.yaml", kfmanifests.KF14TemplateString)
+}
+
+func NewKubeflow15Template() *KubeflowFileTemplate {
+	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.5.1.yaml", kfmanifests.KF15TemplateString)
+}
+
+func newKubeflowTemplateWithTemplate(filename, tmpl string) *KubeflowFileTemplate {
 	return &KubeflowFileTemplate{
-		kubeflowFileTemplate:    kfmanifests.KF14TemplateString,
+		filename:                filename,
+		kubeflowFileTemplate:    tmpl,
 		DefaultSaltedPassword:   "",
 		AuthServicePVCSizeInG:   10,
 		KatibMySQLPVCSizeInG:    10,
@@ -27,6 +36,7 @@ func mustBcryptGenerated(originPasswrod string) string {
 }
 
 type KubeflowFileTemplate struct {
+	filename                string
 	DefaultSaltedPassword   string
 	AuthServicePVCSizeInG   int
 	KatibMySQLPVCSizeInG    int
@@ -37,7 +47,7 @@ type KubeflowFileTemplate struct {
 }
 
 func (k *KubeflowFileTemplate) Filename() string {
-	return "kubeflow-manifest-v1.4.1.yaml"
+	return k.filename
 }
 
 func (k *KubeflowFileTemplate) Execute(w io.Writer) error {
