@@ -232,7 +232,7 @@ func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 	return nil
 }
 
-func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toPort int) error {
+func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, address string, fromPort, toPort int) error {
 	// TODO: auto reconnect
 	cmdAndArgs := []string{
 		cli.localKubectlBinaryPath,
@@ -243,6 +243,12 @@ func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, fromPort, toP
 		fmt.Sprintf("%d:%d", toPort, fromPort),
 		"--kubeconfig",
 		kubeConfigFile,
+	}
+	if len(address) != 0 {
+		cmdAndArgs = append(cmdAndArgs, []string{
+			"--address",
+			address,
+		}...)
 	}
 	sr, _, err := cli.runCmd(cmdAndArgs)
 	if err != nil {
