@@ -181,6 +181,20 @@ func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) er
 	return nil
 }
 
+func (cli *CLI) RemoveKubeflow(kubeConfigFile string, kfmanifestFile string) error {
+	cmdAndArgs := []string{
+		cli.localKubectlBinaryPath,
+		"delete",
+		"-f",
+		kfmanifestFile,
+		"--kubeconfig",
+		kubeConfigFile,
+	}
+	sr, _, err := cli.runCmd(cmdAndArgs)
+	ioutil.StderrOnError(sr)
+	return err
+}
+
 func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
 	multiCmdAndArgs := [][]string{
 		[]string{
