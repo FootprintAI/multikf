@@ -33,6 +33,7 @@ func NewRootCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *c
 	cmd.AddCommand(NewListCommand(logger, ioStreams))
 	cmd.AddCommand(NewDeleteCommand(logger, ioStreams))
 	cmd.AddCommand(NewConnectCommand(logger, ioStreams))
+	cmd.AddCommand(NewPluginCommand(logger, ioStreams))
 
 	cmd.PersistentFlags().StringVar(&guestRootDir, "dir", ".multikfdir", "multikf root dir")
 	cmd.PersistentFlags().BoolVar(&verbose, "verbose", true, "verbose (default: true)")

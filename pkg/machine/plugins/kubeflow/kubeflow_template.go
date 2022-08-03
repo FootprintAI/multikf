@@ -10,11 +10,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func NewKubeflow14Template() *KubeflowFileTemplate {
+func NewKubeflow14Template() pkgtemplate.TemplateExecutor {
 	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.4.1.yaml", kfmanifests.KF14TemplateString)
 }
 
-func NewKubeflow15Template() *KubeflowFileTemplate {
+func NewKubeflow15Template() pkgtemplate.TemplateExecutor {
 	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.5.1.yaml", kfmanifests.KF15TemplateString)
 }
 

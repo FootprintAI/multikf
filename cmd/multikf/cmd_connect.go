@@ -18,14 +18,21 @@ func NewConnectCommand(logger log.Logger, ioStreams genericclioptions.IOStreams)
 }
 
 func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *cobra.Command {
+	var (
+		port int // dedicated port
+	)
 	handle := func(machineName string) error {
 		m, err := findMachineByName(machineName, logger)
 		if err != nil {
 			return err
 		}
-		destPort, err := machine.FindFreePort()
-		if err != nil {
-			return err
+		destPort := port
+		if !(destPort > 1024 && destPort < 65536) {
+			logger.V(0).Infof("invaid customized port, use random\n")
+			destPort, err = machine.FindFreePort()
+			if err != nil {
+				return err
+			}
 		}
 		logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
 		return m.GetKubeCli().Portforward(m.GetKubeConfig(), "svc/istio-ingressgateway", "istio-system", 80, destPort)
@@ -37,5 +44,7 @@ func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IO
 			return handle(args[0])
 		},
 	}
+
+	cmd.Flags().IntVar(&port, "port", 0, "customized port number for connect, ranged should be 65535> >1024, default is 0 (random)")
 	return cmd
 }

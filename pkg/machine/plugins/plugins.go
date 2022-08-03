@@ -6,6 +6,7 @@ import (
 
 	"github.com/footprintai/multikf/pkg/machine"
 	kubeflowplugin "github.com/footprintai/multikf/pkg/machine/plugins/kubeflow"
+	"github.com/footprintai/multikf/pkg/template"
 	templatefs "github.com/footprintai/multikf/pkg/template/fs"
 )
 
@@ -21,13 +22,18 @@ func (t TypePluginVersion) String() string {
 	return string(t)
 }
 
-type kubeflowTemplateMakerFunc func() *kubeflowplugin.KubeflowFileTemplate
+var (
+	TypePluginVersionKF14  = NewTypePluginVersion("v1.4")
+	TypePluginVersionKF151 = NewTypePluginVersion("v1.5.1")
+)
+
+type templateMakerFunc func() template.TemplateExecutor
 
 var (
 	noVersion         = NewTypePluginVersion("v0.0.0")
-	availableVersions = map[TypePluginVersion]kubeflowTemplateMakerFunc{
-		NewTypePluginVersion("v1.4"):   kubeflowplugin.NewKubeflow14Template,
-		NewTypePluginVersion("v1.5.1"): kubeflowplugin.NewKubeflow15Template,
+	availableVersions = map[TypePluginVersion]templateMakerFunc{
+		TypePluginVersionKF14:  kubeflowplugin.NewKubeflow14Template,
+		TypePluginVersionKF151: kubeflowplugin.NewKubeflow15Template,
 	}
 )
 
@@ -35,7 +41,7 @@ func NewTypePluginVersion(s string) TypePluginVersion {
 	return TypePluginVersion(s)
 }
 
-func KubeflowPluginVersionTemplate(s TypePluginVersion) (TypePluginVersion, *kubeflowplugin.KubeflowFileTemplate) {
+func KubeflowPluginVersionTemplate(s TypePluginVersion) (TypePluginVersion, template.TemplateExecutor) {
 	templateMaker, hasVersion := availableVersions[s]
 	if !hasVersion {
 		return noVersion, nil
@@ -48,35 +54,60 @@ type Plugin interface {
 	PluginVersion() TypePluginVersion
 }
 
-func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
-	pluginAndFiles := map[TypePlugin]string{}
+type TypeHostFilePath string
 
-	memFs := templatefs.NewMemoryFilesFs()
+func (t TypeHostFilePath) String() string {
+	return string(t)
+}
+
+func NewTypeHostFilePath(s string) TypeHostFilePath {
+	return TypeHostFilePath(s)
+}
+
+func generatePluginsManifestsMapping(m machine.MachineCURD, dumpToFile bool, plugins ...Plugin) (map[Plugin]template.TemplateExecutor, error) {
+	pluginAndTmpls := map[Plugin]template.TemplateExecutor{}
 	for _, plugin := range plugins {
 		switch plugin.PluginType() {
 		case TypePluginKubeflow:
 			// handle kubeflow plugins
 			_, tmpl := KubeflowPluginVersionTemplate(plugin.PluginVersion())
 			if tmpl == nil {
-				return errors.New("plugins: no version found")
+				return nil, errors.New("plugins: no version found")
 			}
-			if err := memFs.Generate(plugin, tmpl); err != nil {
-				return err
-			}
-			pluginAndFiles[plugin.PluginType()] = tmpl.Filename()
+			pluginAndTmpls[plugin] = tmpl
 		default:
-			return errors.New("plugins: no available plugins")
+			return nil, errors.New("plugins: no available plugins")
 		}
 	}
-	if err := templatefs.NewFolder(m.HostDir()).DumpFiles(true, memFs.FS()); err != nil {
-		return err
+	if dumpToFile {
+		memFs := templatefs.NewMemoryFilesFs()
+		for plugin, tmpl := range pluginAndTmpls {
+			if err := memFs.Generate(plugin, tmpl); err != nil {
+				return nil, err
+			}
+		}
+		// TODO: check whether we want to overwrite exsiting or not
+		if err := templatefs.NewFolder(m.HostDir()).DumpFiles(true, memFs.FS()); err != nil {
+			return nil, err
+		}
 	}
+	return pluginAndTmpls, nil
+}
+
+func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 	var err error
-	_, hasKf := pluginAndFiles[TypePluginKubeflow]
-	if hasKf {
-		err = m.GetKubeCli().InstallKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), pluginAndFiles[TypePluginKubeflow]))
-		if err == nil {
-			err = m.GetKubeCli().PatchKubeflow(m.GetKubeConfig())
+	pluginAndTmpls, err := generatePluginsManifestsMapping(m, true, plugins...)
+	if err != nil {
+		return nil
+	}
+	for plugin, tmpl := range pluginAndTmpls {
+		if plugin.PluginType() == TypePluginKubeflow {
+			err = m.GetKubeCli().InstallKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), tmpl.Filename()))
+			if err == nil {
+				if plugin.PluginVersion() == TypePluginVersionKF14 {
+					err = m.GetKubeCli().PatchKubeflow(m.GetKubeConfig())
+				}
+			}
 		}
 	}
 	if err != nil {
@@ -86,6 +117,16 @@ func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 }
 
 func RemovePlugins(m machine.MachineCURD, plugins ...Plugin) error {
-	return errors.New("plugins: not imp")
+	var err error
+	pluginAndTmpls, err := generatePluginsManifestsMapping(m, false, plugins...)
+	if err != nil {
+		return err
+	}
+	for plugin, tmpl := range pluginAndTmpls {
+		if plugin.PluginType() == TypePluginKubeflow {
+			err = m.GetKubeCli().RemoveKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), tmpl.Filename()))
+		}
+	}
+	return err
 
 }
