@@ -19,7 +19,8 @@ func NewConnectCommand(logger log.Logger, ioStreams genericclioptions.IOStreams)
 
 func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	var (
-		port int // dedicated port
+		port         int  // dedicated port
+		enablePublic bool // enable public access
 	)
 	handle := func(machineName string) error {
 		m, err := findMachineByName(machineName, logger)
@@ -35,7 +36,11 @@ func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IO
 			}
 		}
 		logger.V(0).Infof("now you can open http://localhost:%d\n", destPort)
-		return m.GetKubeCli().Portforward(m.GetKubeConfig(), "svc/istio-ingressgateway", "istio-system", 80, destPort)
+		var listenedAddress string
+		if enablePublic {
+			listenedAddress = "0.0.0.0"
+		}
+		return m.GetKubeCli().Portforward(m.GetKubeConfig(), "svc/istio-ingressgateway", "istio-system", listenedAddress, 80, destPort)
 	}
 	cmd := &cobra.Command{
 		Use:   "kubeflow",
@@ -46,5 +51,6 @@ func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IO
 	}
 
 	cmd.Flags().IntVar(&port, "port", 0, "customized port number for connect, ranged should be 65535> >1024, default is 0 (random)")
+	cmd.Flags().BoolVar(&enablePublic, "enable_public", false, "enable public access, default: false")
 	return cmd
 }
