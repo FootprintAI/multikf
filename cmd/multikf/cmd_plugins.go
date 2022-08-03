@@ -60,7 +60,8 @@ func newAddPluginCommand(logger log.Logger, ioStreams genericclioptions.IOStream
 
 func newRemovePluginCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	var (
-		removeKubeflow bool // remove kubeflow components
+		removeKubeflow        bool   // remove kubeflow components
+		removeKubeflowVersion string // with kubeflow version
 	)
 
 	handle := func(machineName string) error {
@@ -70,7 +71,7 @@ func newRemovePluginCommand(logger log.Logger, ioStreams genericclioptions.IOStr
 		}
 		var removingPlugins []plugins.Plugin
 		if removeKubeflow {
-			removingPlugins = append(removingPlugins, kubeflowPlugin{})
+			removingPlugins = append(removingPlugins, kubeflowPlugin{kubeflowVersion: plugins.NewTypePluginVersion(removeKubeflowVersion)})
 		}
 		return plugins.RemovePlugins(m, removingPlugins...)
 	}
@@ -83,5 +84,6 @@ func newRemovePluginCommand(logger log.Logger, ioStreams genericclioptions.IOStr
 	}
 
 	cmd.Flags().BoolVar(&removeKubeflow, "remove_kubeflow", false, "remove kubeflow modules (default: false)")
+	cmd.Flags().StringVar(&removeKubeflowVersion, "kubeflow_version", "v1.4", "kubeflow version v1.4/v1.5.1")
 	return cmd
 }
