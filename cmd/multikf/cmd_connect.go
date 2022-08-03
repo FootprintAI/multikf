@@ -28,6 +28,7 @@ func newConnectKubeflowCommand(logger log.Logger, ioStreams genericclioptions.IO
 		}
 		destPort := port
 		if !(destPort > 1024 && destPort < 65536) {
+			logger.V(0).Infof("invaid customized port, use random\n")
 			destPort, err = machine.FindFreePort()
 			if err != nil {
 				return err
