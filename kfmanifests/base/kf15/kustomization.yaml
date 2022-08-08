@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+bases:
+- ./kubeflow-manifest-v1.5.1.yaml
+patches:
+  - target:
+      kind: PersistentVolumeClaim
+      name: authservice-pvc
+      namespace: istio-system
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "[[.AuthServicePVCSizeInG]]Gi"
+  - target:
+      kind: PersistentVolumeClaim
+      name: katib-mysql
+      namespace: kubeflow
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "[[.KatibMySQLPVCSizeInG]]Gi"
+  - target:
+      kind: PersistentVolumeClaim
+      name: minio-pvc
+      namespace: kubeflow
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "[[.PipelineMinioPVCSizeInG]]Gi"
+  - target:
+      kind: PersistentVolumeClaim
+      name: mysql-pv-claim
+      namespace: kubeflow
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "[[.PipelineMySQLPVCSizeInG]]Gi"
+
