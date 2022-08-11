@@ -67,7 +67,8 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  image: kindest/node:v1.21.2
+  image: footprintai/kind-node:v1.21.9
+  # image: kindest/node:v1.21.2
   gpus: true
   extraPortMappings:
   - containerPort: 8081
@@ -158,7 +159,8 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  image: kindest/node:v1.21.2
+  image: footprintai/kind-node:v1.21.9
+  # image: kindest/node:v1.21.2
   gpus: false
   extraPortMappings:
   - containerPort: 8081
