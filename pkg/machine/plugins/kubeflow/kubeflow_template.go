@@ -18,6 +18,10 @@ func NewKubeflow15Template() pkgtemplate.TemplateExecutor {
 	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.5.1.yaml", kfmanifests.KF15TemplateString)
 }
 
+func NewKubeflow16Template() pkgtemplate.TemplateExecutor {
+	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.6.0.yaml", kfmanifests.KF16TemplateString)
+}
+
 func newKubeflowTemplateWithTemplate(filename, tmpl string) *KubeflowFileTemplate {
 	return &KubeflowFileTemplate{
 		filename:                filename,

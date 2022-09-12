@@ -25,6 +25,7 @@ func (t TypePluginVersion) String() string {
 var (
 	TypePluginVersionKF14  = NewTypePluginVersion("v1.4")
 	TypePluginVersionKF151 = NewTypePluginVersion("v1.5.1")
+	TypePluginVersionKF160 = NewTypePluginVersion("v1.6.0")
 )
 
 type templateMakerFunc func() template.TemplateExecutor
@@ -34,6 +35,7 @@ var (
 	availableVersions = map[TypePluginVersion]templateMakerFunc{
 		TypePluginVersionKF14:  kubeflowplugin.NewKubeflow14Template,
 		TypePluginVersionKF151: kubeflowplugin.NewKubeflow15Template,
+		TypePluginVersionKF160: kubeflowplugin.NewKubeflow16Template,
 	}
 )
 
