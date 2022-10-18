@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # install nginx-ingress-controller
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/baremetal/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.4.0/deploy/static/provider/baremetal/deploy.yaml
 
 cat << EOF | tee haproxy.cfg
 global

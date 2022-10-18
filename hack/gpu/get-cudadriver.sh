@@ -12,6 +12,8 @@ ENV cuda_version=cuda11.8
 
 echo " this script runs on ${OS}, for other version please check https://developer.nvidia.com/cuda-downloads"
 
+# purge previous installation
+# apt-get purge -y nvidia*
 
 apt-get update
 apt-get install -y wget
@@ -22,5 +24,5 @@ apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repo
 add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${OS}/x86_64/ /"
 
 apt-get update
-apt-get install -y cuda libcudnn8=${cudnn_version}-1+${cuda_version} && \
-    libcudnn8-dev=${cudnn_version}-1+${cuda_version}
+# or use apt-get install -y nvidia-driver-515 to install previous driver version to avoid conflict in cuda11.8
+apt-get install -y cuda libcudnn8=${cudnn_version}-1+${cuda_version} libcudnn8-dev=${cudnn_version}-1+${cuda_version}

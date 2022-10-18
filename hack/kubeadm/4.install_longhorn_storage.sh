@@ -4,15 +4,23 @@
 # install prerequsite
 
 # install nfs-common
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-nfs-installation.yaml
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/deploy/prerequisite/longhorn-nfs-installation.yaml
 
 # install open-iScsi
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.2/deploy/prerequisite/longhorn-iscsi-installation.yaml
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/deploy/prerequisite/longhorn-iscsi-installation.yaml
 
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.2/deploy/longhorn.yaml
+kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/deploy/longhorn.yaml
 
 # uninstall
-# kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
+# kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/uninstall/uninstall.yaml
+#
+# waiting for the uninstall job running
+# 
+# kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/deploy/longhorn.yaml
+# kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.2/uninstall/uninstall.yaml
+#
+# check this for longhorn deadlock on finalizer
+# https://avasdream.engineer/kubernetes-longhorn-stuck-terminating
 
 # make longhore storageclass as default
 kubectl patch storageclass longhorn -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
