@@ -101,8 +101,7 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  # image: footprintai/kind-node:v1.21.9
-  image: kindest/node:v1.21.14
+  image: kindest/node:v1.21.14@sha256:ad5b7446dd8332439f22a1efdac73670f0da158c00f0a70b45716e7ef3fae20b
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
   {{- range $i, $p := .ExportPorts}}

@@ -12,8 +12,9 @@ curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.li
 
 apt-get update && apt-get install -y nvidia-container-toolkit nvidia-container-runtime
 
-cat << EOF
-check /etc/docker/daemon.json contains the following config
+# if you were using containerd, please check here: https://github.com/NVIDIA/k8s-device-plugin#configure-containerd
+# append /etc/docker/daemon.json with the following config
+tee /etc/docker/daemon.json <<EOF
 {
     "default-runtime": "nvidia",
     "runtimes": {
@@ -23,21 +24,7 @@ check /etc/docker/daemon.json contains the following config
         }
     }
 }
-
-if you were using containerd, please check here: https://github.com/NVIDIA/k8s-device-plugin#configure-containerd
 EOF
-
-#tee /etc/docker/daemon.json <<EOF
-#{
-#    "default-runtime": "nvidia",
-#    "runtimes": {
-#        "nvidia": {
-#            "path": "/usr/bin/nvidia-container-runtime",
-#            "runtimeArgs": []
-#        }
-#    }
-#}
-#EOF
 
 # restart dockerd
 systemctl daemon-reload
