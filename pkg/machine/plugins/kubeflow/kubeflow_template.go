@@ -5,21 +5,12 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/footprintai/multikf/kfmanifests"
 	pkgtemplate "github.com/footprintai/multikf/pkg/template"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func NewKubeflow14Template() pkgtemplate.TemplateExecutor {
-	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.4.1.yaml", kfmanifests.KF14TemplateString)
-}
-
-func NewKubeflow15Template() pkgtemplate.TemplateExecutor {
-	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.5.1.yaml", kfmanifests.KF15TemplateString)
-}
-
-func NewKubeflow16Template() pkgtemplate.TemplateExecutor {
-	return newKubeflowTemplateWithTemplate("kubeflow-manifest-v1.6.0.yaml", kfmanifests.KF16TemplateString)
+func NewKubeflowTemplateExecutor(filename string, manifest string) pkgtemplate.TemplateExecutor {
+	return newKubeflowTemplateWithTemplate(filename, manifest)
 }
 
 func newKubeflowTemplateWithTemplate(filename, tmpl string) *KubeflowFileTemplate {

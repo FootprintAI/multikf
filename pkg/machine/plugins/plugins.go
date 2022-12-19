@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 
+	kfmanifests "github.com/footprintai/multikf/kfmanifests"
 	"github.com/footprintai/multikf/pkg/machine"
 	kubeflowplugin "github.com/footprintai/multikf/pkg/machine/plugins/kubeflow"
 	"github.com/footprintai/multikf/pkg/template"
@@ -22,33 +23,24 @@ func (t TypePluginVersion) String() string {
 	return string(t)
 }
 
-var (
-	TypePluginVersionKF14  = NewTypePluginVersion("v1.4")
-	TypePluginVersionKF151 = NewTypePluginVersion("v1.5.1")
-	TypePluginVersionKF160 = NewTypePluginVersion("v1.6.0")
-)
-
 type templateMakerFunc func() template.TemplateExecutor
 
 var (
-	noVersion         = NewTypePluginVersion("v0.0.0")
-	availableVersions = map[TypePluginVersion]templateMakerFunc{
-		TypePluginVersionKF14:  kubeflowplugin.NewKubeflow14Template,
-		TypePluginVersionKF151: kubeflowplugin.NewKubeflow15Template,
-		TypePluginVersionKF160: kubeflowplugin.NewKubeflow16Template,
-	}
+	noVersion             = NewTypePluginVersion("v0.0.0")
+	typePluginVersionKF14 = NewTypePluginVersion("v1.4")
 )
 
 func NewTypePluginVersion(s string) TypePluginVersion {
 	return TypePluginVersion(s)
 }
 
-func KubeflowPluginVersionTemplate(s TypePluginVersion) (TypePluginVersion, template.TemplateExecutor) {
-	templateMaker, hasVersion := availableVersions[s]
-	if !hasVersion {
+func kubeflowPluginVersionTemplate(s TypePluginVersion) (TypePluginVersion, template.TemplateExecutor) {
+	version := s.String()
+	manifests, err := kfmanifests.GetVersion(version)
+	if err != nil {
 		return noVersion, nil
 	}
-	return s, templateMaker()
+	return s, kubeflowplugin.NewKubeflowTemplateExecutor(kfmanifests.VersionBaseFileName(version), manifests)
 }
 
 type Plugin interface {
@@ -72,7 +64,7 @@ func generatePluginsManifestsMapping(m machine.MachineCURD, dumpToFile bool, plu
 		switch plugin.PluginType() {
 		case TypePluginKubeflow:
 			// handle kubeflow plugins
-			_, tmpl := KubeflowPluginVersionTemplate(plugin.PluginVersion())
+			_, tmpl := kubeflowPluginVersionTemplate(plugin.PluginVersion())
 			if tmpl == nil {
 				return nil, errors.New("plugins: no version found")
 			}
@@ -106,7 +98,7 @@ func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 		if plugin.PluginType() == TypePluginKubeflow {
 			err = m.GetKubeCli().InstallKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), tmpl.Filename()))
 			if err == nil {
-				if plugin.PluginVersion() == TypePluginVersionKF14 {
+				if plugin.PluginVersion() == typePluginVersionKF14 {
 					err = m.GetKubeCli().PatchKubeflow(m.GetKubeConfig())
 				}
 			}
