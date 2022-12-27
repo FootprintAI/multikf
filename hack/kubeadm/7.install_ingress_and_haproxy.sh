@@ -79,6 +79,52 @@ backend httpingresscontroller
 backend httpsingresscontroller
         mode tcp
         server defaultcontroller   <use-ingress-nginx-controller-svc-private-ip>:443 check
+
+## multiple hostname forwarding for both http/https
+#frontend http_in
+#        mode http
+#        bind *:80
+#        option forwardfor
+#        acl host_server1 hdr(host) -i hostname1.example.com
+#        acl host_server2 hdr(host) -i hostname2.example.com
+#
+#        use_backend http_server1 if host_server1
+#        use_backend http_server2 if host_server2
+#
+#backend http_server1
+#        mode http
+#        option forwardfor
+#        server server1 <ip>:<port>
+#
+#backend http_server2
+#        mode http
+#        option forwardfor
+#        server server2 <ip>:<port>
+#
+#frontend https_in
+#        mode tcp
+#        bind *:443
+#        acl tls req.ssl_hello_type 1
+#        tcp-request inspect-delay 5s
+#        tcp-request content accept if tls
+#
+#        acl host_server1 req.ssl_sni -i hostname1.example.com
+#        acl host_server2 req.ssl_sni -i hostname2.example.com
+#
+#        use_backend https_server1 if host_server1
+#        use_backend https_server2 if host_server2
+#
+## Backend definitions (http servers: containers)
+## The "*-big" servers have twice processing power and memory than "*-small" servers, so the weights are 2 and 1 respectively
+#
+#backend https_server1
+#        mode tcp
+#        server server1 <ip>:<port> check
+#
+#backend https_server2
+#        mode tcp
+#        server server2 <ip>:<port> check
+#
 EOF
 
 ```
