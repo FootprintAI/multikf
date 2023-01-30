@@ -101,7 +101,7 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  image: kindest/node:v1.21.14@sha256:ad5b7446dd8332439f22a1efdac73670f0da158c00f0a70b45716e7ef3fae20b
+  image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
   {{- range $i, $p := .ExportPorts}}
