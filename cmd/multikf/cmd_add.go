@@ -22,6 +22,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		withKubeflowDefaultPassword string // with kubeflow defaultpassword
 		withIP                      string // with specific IP
 		withAudit                   bool   // with audit enabled
+		withWorkers                 int    // with workers
 		exportPorts                 string // export ports on hostmachine
 		forceOverwrite              bool   // force overwrite existing config
 	)
@@ -54,6 +55,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			exportPorts:    exportPorts,
 			forceOverwrite: forceOverwrite,
 			auditEnabled:   withAudit,
+			workers:        withWorkers,
 		})
 		if err != nil {
 			return err
@@ -89,6 +91,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
 	cmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
 	cmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)")
+	cmd.Flags().IntVar(&withWorkers, "with_workers", 0, "use workers (default: 0)")
 
 	return cmd
 }

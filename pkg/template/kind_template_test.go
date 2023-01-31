@@ -34,6 +34,10 @@ func (s staticConfig) AuditFileAbsolutePath() string {
 	return ""
 }
 
+func (s staticConfig) GetWorkerIDs() []int {
+	return []int{1, 2, 3}
+}
+
 func (s staticConfig) GetExportPorts() []machine.ExportPortPair {
 	return []machine.ExportPortPair{
 		machine.ExportPortPair{
@@ -67,7 +71,6 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  # image: footprintai/kind-node:v1.21.9
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: true
   extraPortMappings:
@@ -77,6 +80,12 @@ nodes:
   - containerPort: 8083
     hostPort: 443
     protocol: TCP
+- role: worker
+  image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+- role: worker
+  image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+- role: worker
+  image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
 networking:
   apiServerAddress: 1.2.3.4
   apiServerPort: 8443
@@ -115,6 +124,10 @@ func (s auditConfig) AuditEnabled() bool {
 
 func (s auditConfig) AuditFileAbsolutePath() string {
 	return "foo.bar.yaml"
+}
+
+func (s auditConfig) GetWorkerIDs() []int {
+	return []int{}
 }
 
 func TestKindTemplateWithAudit(t *testing.T) {
@@ -159,8 +172,7 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  # image: footprintai/kind-node:v1.21.9
-  image: kindest/node:v1.21.14
+  image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: false
   extraPortMappings:
   - containerPort: 8081
