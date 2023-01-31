@@ -16,6 +16,7 @@ type MachineConfiger interface {
 	GetExportPorts() []ExportPortPair
 	GetForceOverwriteConfig() bool
 	AuditEnabled() bool
+	GetWorkers() int
 }
 
 type ExportPortPair struct {

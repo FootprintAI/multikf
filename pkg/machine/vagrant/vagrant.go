@@ -206,6 +206,7 @@ func (v *VagrantMachine) prepareFiles() error {
 		v.options.GetExportPorts(),
 		v.options.AuditEnabled(),
 		"/tmp/audit-policy.yaml", /*for vagrant, we will copy the file under /tmp and run local installation*/
+		v.options.GetWorkers(),
 	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)

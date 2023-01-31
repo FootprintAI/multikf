@@ -116,6 +116,7 @@ func (h *HostMachine) prepareFiles() error {
 		h.options.GetExportPorts(),
 		h.options.AuditEnabled(),
 		filepath.Join(h.hostMachineDir, "audit-policy.yaml"),
+		h.options.GetWorkers(),
 	)
 
 	vfolder := NewHostFolder(h.hostMachineDir)

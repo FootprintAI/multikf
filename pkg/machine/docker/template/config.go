@@ -9,7 +9,7 @@ type DockerHostmachineTemplateConfig struct {
 	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string) *DockerHostmachineTemplateConfig {
+func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int) *DockerHostmachineTemplateConfig {
 	return &DockerHostmachineTemplateConfig{
 		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
 			name,
@@ -22,6 +22,7 @@ func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshpo
 			exportPorts,
 			auditEnabled,
 			auditFileAbsolutePath,
+			workerCount,
 		),
 	}
 }

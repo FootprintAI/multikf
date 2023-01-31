@@ -49,3 +49,7 @@ type AuditEnabler interface {
 	AuditEnabled() bool
 	AuditFileAbsolutePath() string
 }
+
+type WorkerIDsGetter interface {
+	GetWorkerIDs() []int
+}

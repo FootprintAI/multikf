@@ -1,6 +1,13 @@
 package config
 
-import "github.com/footprintai/multikf/pkg/machine"
+import (
+	"github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/template"
+)
+
+var (
+	_ template.KindConfiger = &DefaultTemplateConfig{}
+)
 
 type DefaultTemplateConfig struct {
 	name                  string
@@ -13,9 +20,10 @@ type DefaultTemplateConfig struct {
 	exportPorts           []machine.ExportPortPair
 	auditEnabled          bool
 	auditFileAbsolutePath string
+	workerCount           int
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -27,6 +35,7 @@ func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, ku
 		exportPorts:           exportPorts,
 		auditEnabled:          auditEnabled,
 		auditFileAbsolutePath: auditFileAbsolutePath,
+		workerCount:           workerCount,
 	}
 }
 
@@ -68,4 +77,12 @@ func (t *DefaultTemplateConfig) AuditEnabled() bool {
 
 func (t *DefaultTemplateConfig) AuditFileAbsolutePath() string {
 	return t.auditFileAbsolutePath
+}
+
+func (t *DefaultTemplateConfig) GetWorkerIDs() []int {
+	ids := make([]int, t.workerCount, t.workerCount)
+	for i := 0; i < t.workerCount; i++ {
+		ids[i] = i
+	}
+	return ids
 }

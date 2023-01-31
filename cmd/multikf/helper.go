@@ -58,6 +58,10 @@ func newMachineFactoryWithProvisioner(p machine.Provisioner, logger log.Logger) 
 	return vag, nil
 }
 
+var (
+	_ machine.MachineConfiger = &machineConfig{}
+)
+
 type machineConfig struct {
 	logger          log.Logger
 	cpus            int
@@ -68,6 +72,7 @@ type machineConfig struct {
 	defaultPassword string
 	forceOverwrite  bool
 	auditEnabled    bool
+	workers         int
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -122,6 +127,10 @@ func (m machineConfig) GetExportPorts() []machine.ExportPortPair {
 
 func (m machineConfig) GetForceOverwriteConfig() bool {
 	return m.forceOverwrite
+}
+
+func (m machineConfig) GetWorkers() int {
+	return m.workers
 }
 
 type kubeflowPlugin struct {
