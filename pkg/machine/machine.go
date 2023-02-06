@@ -17,11 +17,17 @@ type MachineConfiger interface {
 	GetForceOverwriteConfig() bool
 	AuditEnabled() bool
 	GetWorkers() int
+	GetNodeLabels() []NodeLabel
 }
 
 type ExportPortPair struct {
 	HostPort      int
 	ContainerPort int
+}
+
+type NodeLabel struct {
+	Key   string
+	Value string
 }
 
 type MachineType string

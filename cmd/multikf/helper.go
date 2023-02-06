@@ -73,6 +73,7 @@ type machineConfig struct {
 	forceOverwrite  bool
 	auditEnabled    bool
 	workers         int
+	nodeLabels      string
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -131,6 +132,26 @@ func (m machineConfig) GetForceOverwriteConfig() bool {
 
 func (m machineConfig) GetWorkers() int {
 	return m.workers
+}
+
+// a=b,c=d
+func (m machineConfig) GetNodeLabels() []machine.NodeLabel {
+	if len(m.nodeLabels) == 0 {
+		m.logger.V(1).Infof("getnodelabel: no label\n")
+		return nil
+	}
+	tokens := strings.Split(m.nodeLabels, ",")
+	var nodeLabels []machine.NodeLabel
+	for _, token := range tokens {
+		subtokens := strings.Split(token, "=")
+		if len(subtokens) != 2 {
+			m.logger.Errorf("getnodelabel: parse failed, expect: key=value but got:%s\n", token)
+			continue
+		}
+		nodeLabels = append(nodeLabels, machine.NodeLabel{Key: subtokens[0], Value: subtokens[1]})
+	}
+	m.logger.V(1).Infof("getnodelabel: labels:%+v\n", nodeLabels)
+	return nodeLabels
 }
 
 type kubeflowPlugin struct {

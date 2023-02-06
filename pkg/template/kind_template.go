@@ -37,6 +37,7 @@ type KindConfiger interface {
 	ExportPortsGetter
 	AuditEnabler
 	WorkerIDsGetter
+	NodeLabelsGetter
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -53,6 +54,12 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	k.AuditFileAbsolutePath = c.AuditFileAbsolutePath()
 	k.WorkerIDs = c.GetWorkerIDs()
 
+	nodeLabels := c.GetNodeLabels()
+	k.NodeLabels = make([]string, len(nodeLabels), len(nodeLabels))
+	for idx := 0; idx < len(nodeLabels); idx++ {
+		k.NodeLabels[idx] = fmt.Sprintf("%s=%s", nodeLabels[idx].Key, nodeLabels[idx].Value)
+	}
+
 	return nil
 }
 
@@ -66,6 +73,7 @@ type KindFileTemplate struct {
 	AuditEnabled          bool
 	AuditFileAbsolutePath string
 	WorkerIDs             []int
+	NodeLabels            []string
 }
 
 var kindDefaultFileTemplate string = `
@@ -104,6 +112,9 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
+        {{- range $i, $p := .NodeLabels}}
+        node-labels: "{{$p}}"
+        {{- end}}
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
