@@ -207,6 +207,7 @@ func (v *VagrantMachine) prepareFiles() error {
 		v.options.AuditEnabled(),
 		"/tmp/audit-policy.yaml", /*for vagrant, we will copy the file under /tmp and run local installation*/
 		v.options.GetWorkers(),
+		v.options.GetNodeLabels(),
 	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)

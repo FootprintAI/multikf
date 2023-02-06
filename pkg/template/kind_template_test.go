@@ -38,6 +38,19 @@ func (s staticConfig) GetWorkerIDs() []int {
 	return []int{1, 2, 3}
 }
 
+func (s staticConfig) GetNodeLabels() []machine.NodeLabel {
+	return []machine.NodeLabel{
+		machine.NodeLabel{
+			Key:   "a",
+			Value: "b",
+		},
+		machine.NodeLabel{
+			Key:   "c",
+			Value: "d",
+		},
+	}
+}
+
 func (s staticConfig) GetExportPorts() []machine.ExportPortPair {
 	return []machine.ExportPortPair{
 		machine.ExportPortPair{
@@ -71,6 +84,8 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
+        node-labels: "a=b"
+        node-labels: "c=d"
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: true
   extraPortMappings:
@@ -128,6 +143,10 @@ func (s auditConfig) AuditFileAbsolutePath() string {
 
 func (s auditConfig) GetWorkerIDs() []int {
 	return []int{}
+}
+
+func (s auditConfig) GetNodeLabels() []machine.NodeLabel {
+	return []machine.NodeLabel{}
 }
 
 func TestKindTemplateWithAudit(t *testing.T) {

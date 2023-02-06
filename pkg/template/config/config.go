@@ -21,9 +21,10 @@ type DefaultTemplateConfig struct {
 	auditEnabled          bool
 	auditFileAbsolutePath string
 	workerCount           int
+	nodeLabels            []machine.NodeLabel
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -36,6 +37,7 @@ func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, ku
 		auditEnabled:          auditEnabled,
 		auditFileAbsolutePath: auditFileAbsolutePath,
 		workerCount:           workerCount,
+		nodeLabels:            nodeLabels,
 	}
 }
 
@@ -85,4 +87,8 @@ func (t *DefaultTemplateConfig) GetWorkerIDs() []int {
 		ids[i] = i
 	}
 	return ids
+}
+
+func (t *DefaultTemplateConfig) GetNodeLabels() []machine.NodeLabel {
+	return t.nodeLabels
 }

@@ -23,6 +23,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		withIP                      string // with specific IP
 		withAudit                   bool   // with audit enabled
 		withWorkers                 int    // with workers
+		withLabels                  string // with labels
 		exportPorts                 string // export ports on hostmachine
 		forceOverwrite              bool   // force overwrite existing config
 	)
@@ -56,6 +57,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			forceOverwrite: forceOverwrite,
 			auditEnabled:   withAudit,
 			workers:        withWorkers,
+			nodeLabels:     withLabels,
 		})
 		if err != nil {
 			return err
@@ -92,6 +94,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().StringVar(&withIP, "with_ip", "0.0.0.0", "with a specific ip address for kubeapi (default: 0.0.0.0)")
 	cmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)")
 	cmd.Flags().IntVar(&withWorkers, "with_workers", 0, "use workers (default: 0)")
+	cmd.Flags().StringVar(&withLabels, "with_labels", "", "attach labels, format: key1=value1,key2=value2(default: )")
 
 	return cmd
 }

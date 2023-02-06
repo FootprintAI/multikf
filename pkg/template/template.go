@@ -53,3 +53,7 @@ type AuditEnabler interface {
 type WorkerIDsGetter interface {
 	GetWorkerIDs() []int
 }
+
+type NodeLabelsGetter interface {
+	GetNodeLabels() []machine.NodeLabel
+}
