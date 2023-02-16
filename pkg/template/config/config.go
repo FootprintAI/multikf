@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/footprintai/multikf/pkg/template"
 )
@@ -81,10 +83,13 @@ func (t *DefaultTemplateConfig) AuditFileAbsolutePath() string {
 	return t.auditFileAbsolutePath
 }
 
-func (t *DefaultTemplateConfig) GetWorkerIDs() []int {
-	ids := make([]int, t.workerCount, t.workerCount)
+func (t *DefaultTemplateConfig) GetWorkers() []template.Worker {
+	ids := make([]template.Worker, t.workerCount, t.workerCount)
 	for i := 0; i < t.workerCount; i++ {
-		ids[i] = i
+		ids[i] = template.Worker{
+			Id:     fmt.Sprintf("%d", i),
+			UseGPU: t.GetGPUs() > 0,
+		}
 	}
 	return ids
 }

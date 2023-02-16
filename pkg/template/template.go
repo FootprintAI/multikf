@@ -50,8 +50,13 @@ type AuditEnabler interface {
 	AuditFileAbsolutePath() string
 }
 
-type WorkerIDsGetter interface {
-	GetWorkerIDs() []int
+type WorkersGetter interface {
+	GetWorkers() []Worker
+}
+
+type Worker struct {
+	Id     string
+	UseGPU bool
 }
 
 type NodeLabelsGetter interface {

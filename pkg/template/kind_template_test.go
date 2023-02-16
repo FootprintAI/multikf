@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	_ KindConfiger = staticConfig{}
+)
+
 type staticConfig struct{}
 
 func (s staticConfig) GetName() string {
@@ -34,8 +38,21 @@ func (s staticConfig) AuditFileAbsolutePath() string {
 	return ""
 }
 
-func (s staticConfig) GetWorkerIDs() []int {
-	return []int{1, 2, 3}
+func (s staticConfig) GetWorkers() []Worker {
+	return []Worker{
+		Worker{
+			Id:     "1",
+			UseGPU: true,
+		},
+		Worker{
+			Id:     "2",
+			UseGPU: true,
+		},
+		Worker{
+			Id:     "3",
+			UseGPU: true,
+		},
+	}
 }
 
 func (s staticConfig) GetNodeLabels() []machine.NodeLabel {
@@ -97,14 +114,20 @@ nodes:
     protocol: TCP
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+  gpus: true
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+  gpus: true
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+  gpus: true
 networking:
   apiServerAddress: 1.2.3.4
   apiServerPort: 8443
 `
+var (
+	_ KindConfiger = auditConfig{}
+)
 
 type auditConfig struct{}
 
@@ -141,8 +164,8 @@ func (s auditConfig) AuditFileAbsolutePath() string {
 	return "foo.bar.yaml"
 }
 
-func (s auditConfig) GetWorkerIDs() []int {
-	return []int{}
+func (s auditConfig) GetWorkers() []Worker {
+	return []Worker{}
 }
 
 func (s auditConfig) GetNodeLabels() []machine.NodeLabel {
