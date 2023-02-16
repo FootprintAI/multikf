@@ -36,7 +36,7 @@ type KindConfiger interface {
 	GpuGetter
 	ExportPortsGetter
 	AuditEnabler
-	WorkerIDsGetter
+	WorkersGetter
 	NodeLabelsGetter
 }
 
@@ -52,7 +52,7 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	k.ExportPorts = c.GetExportPorts()
 	k.AuditEnabled = c.AuditEnabled()
 	k.AuditFileAbsolutePath = c.AuditFileAbsolutePath()
-	k.WorkerIDs = c.GetWorkerIDs()
+	k.Workers = c.GetWorkers()
 
 	nodeLabels := c.GetNodeLabels()
 	k.NodeLabels = make([]string, len(nodeLabels), len(nodeLabels))
@@ -72,7 +72,7 @@ type KindFileTemplate struct {
 	ExportPorts           []machine.ExportPortPair
 	AuditEnabled          bool
 	AuditFileAbsolutePath string
-	WorkerIDs             []int
+	Workers               []Worker
 	NodeLabels            []string
 }
 
@@ -130,9 +130,10 @@ nodes:
     containerPath: /etc/kubernetes/policies/audit-policy.yaml
     readOnly: true
   {{- end}}
-{{- range .WorkerIDs }}
+{{- range .Workers }}
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
+  gpus: {{ .UseGPU}}
 {{- end}}
 networking:
   apiServerAddress: {{.KubeAPIIP}}
