@@ -55,10 +55,15 @@ type WorkersGetter interface {
 }
 
 type Worker struct {
-	Id     string
-	UseGPU bool
+	Id        string
+	UseGPU    bool
+	LocalPath string
 }
 
 type NodeLabelsGetter interface {
 	GetNodeLabels() []machine.NodeLabel
+}
+
+type LocalPathGetter interface {
+	LocalPath() string
 }

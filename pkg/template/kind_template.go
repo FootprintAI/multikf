@@ -38,6 +38,7 @@ type KindConfiger interface {
 	AuditEnabler
 	WorkersGetter
 	NodeLabelsGetter
+	LocalPathGetter
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -52,6 +53,7 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	k.ExportPorts = c.GetExportPorts()
 	k.AuditEnabled = c.AuditEnabled()
 	k.AuditFileAbsolutePath = c.AuditFileAbsolutePath()
+	k.LocalPath = c.LocalPath()
 	k.Workers = c.GetWorkers()
 
 	nodeLabels := c.GetNodeLabels()
@@ -72,6 +74,7 @@ type KindFileTemplate struct {
 	ExportPorts           []machine.ExportPortPair
 	AuditEnabled          bool
 	AuditFileAbsolutePath string
+	LocalPath             string
 	Workers               []Worker
 	NodeLabels            []string
 }
@@ -123,17 +126,27 @@ nodes:
     hostPort: {{ $p.HostPort }}
     protocol: TCP
   {{- end}}
-  {{- if .AuditEnabled}}
-  # mount the local file on the control plane
+  {{- if or .AuditEnabled .LocalPath}}
   extraMounts:
+  {{- if or .AuditEnabled }}
   - hostPath: {{.AuditFileAbsolutePath}}
     containerPath: /etc/kubernetes/policies/audit-policy.yaml
     readOnly: true
+  {{- end}}
+  {{- if ne .LocalPath ""}}
+  - hostPath: {{.LocalPath}}
+    containerPath: /var/local-path-provisioner
+  {{- end}}
   {{- end}}
 {{- range .Workers }}
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: {{ .UseGPU}}
+  {{- if ne .LocalPath ""}}
+  extraMounts:
+  - hostPath: {{.LocalPath}}
+    containerPath: /var/local-path-provisioner
+  {{- end}}
 {{- end}}
 networking:
   apiServerAddress: {{.KubeAPIIP}}

@@ -24,9 +24,10 @@ type DefaultTemplateConfig struct {
 	auditFileAbsolutePath string
 	workerCount           int
 	nodeLabels            []machine.NodeLabel
+	localPath             string
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -40,6 +41,7 @@ func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, ku
 		auditFileAbsolutePath: auditFileAbsolutePath,
 		workerCount:           workerCount,
 		nodeLabels:            nodeLabels,
+		localPath:             localPath,
 	}
 }
 
@@ -87,8 +89,9 @@ func (t *DefaultTemplateConfig) GetWorkers() []template.Worker {
 	ids := make([]template.Worker, t.workerCount, t.workerCount)
 	for i := 0; i < t.workerCount; i++ {
 		ids[i] = template.Worker{
-			Id:     fmt.Sprintf("%d", i),
-			UseGPU: t.GetGPUs() > 0,
+			Id:        fmt.Sprintf("%d", i),
+			UseGPU:    t.GetGPUs() > 0,
+			LocalPath: t.LocalPath(),
 		}
 	}
 	return ids
@@ -96,4 +99,8 @@ func (t *DefaultTemplateConfig) GetWorkers() []template.Worker {
 
 func (t *DefaultTemplateConfig) GetNodeLabels() []machine.NodeLabel {
 	return t.nodeLabels
+}
+
+func (t *DefaultTemplateConfig) LocalPath() string {
+	return t.localPath
 }

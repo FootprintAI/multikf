@@ -26,6 +26,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		withLabels                  string // with labels
 		exportPorts                 string // export ports on hostmachine
 		forceOverwrite              bool   // force overwrite existing config
+		useLocalPath                string // with localpath
 	)
 
 	ensureNoGPUForVagrant := func(vag machine.MachineCURDFactory, useGPUs int) error {
@@ -58,6 +59,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			auditEnabled:   withAudit,
 			workers:        withWorkers,
 			nodeLabels:     withLabels,
+			localPath:      useLocalPath,
 		})
 		if err != nil {
 			return err
@@ -95,6 +97,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().StringVar(&exportPorts, "export_ports", "", "export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)")
 	cmd.Flags().IntVar(&withWorkers, "with_workers", 0, "use workers (default: 0)")
 	cmd.Flags().StringVar(&withLabels, "with_labels", "", "attach labels, format: key1=value1,key2=value2(default: )")
+	cmd.Flags().StringVar(&useLocalPath, "use_localpath", "", "mount local path to kind cluster")
 
 	return cmd
 }

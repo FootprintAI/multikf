@@ -38,19 +38,26 @@ func (s staticConfig) AuditFileAbsolutePath() string {
 	return ""
 }
 
+func (s staticConfig) LocalPath() string {
+	return "/mnt/test"
+}
+
 func (s staticConfig) GetWorkers() []Worker {
 	return []Worker{
 		Worker{
-			Id:     "1",
-			UseGPU: true,
+			Id:        "1",
+			UseGPU:    true,
+			LocalPath: s.LocalPath(),
 		},
 		Worker{
-			Id:     "2",
-			UseGPU: true,
+			Id:        "2",
+			UseGPU:    true,
+			LocalPath: s.LocalPath(),
 		},
 		Worker{
-			Id:     "3",
-			UseGPU: true,
+			Id:        "3",
+			UseGPU:    true,
+			LocalPath: s.LocalPath(),
 		},
 	}
 }
@@ -112,15 +119,27 @@ nodes:
   - containerPort: 8083
     hostPort: 443
     protocol: TCP
+  extraMounts:
+  - hostPath: /mnt/test
+    containerPath: /var/local-path-provisioner
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: true
+  extraMounts:
+  - hostPath: /mnt/test
+    containerPath: /var/local-path-provisioner
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: true
+  extraMounts:
+  - hostPath: /mnt/test
+    containerPath: /var/local-path-provisioner
 - role: worker
   image: kindest/node:v1.23.12@sha256:9402cf1330bbd3a0d097d2033fa489b2abe40d479cc5ef47d0b6a6960613148a
   gpus: true
+  extraMounts:
+  - hostPath: /mnt/test
+    containerPath: /var/local-path-provisioner
 networking:
   apiServerAddress: 1.2.3.4
   apiServerPort: 8443
@@ -172,6 +191,10 @@ func (s auditConfig) GetNodeLabels() []machine.NodeLabel {
 	return []machine.NodeLabel{}
 }
 
+func (s auditConfig) LocalPath() string {
+	return ""
+}
+
 func TestKindTemplateWithAudit(t *testing.T) {
 	kt := NewKindTemplate()
 	assert.NoError(t, kt.Populate(auditConfig{}))
@@ -220,7 +243,6 @@ nodes:
   - containerPort: 8081
     hostPort: 80
     protocol: TCP
-  # mount the local file on the control plane
   extraMounts:
   - hostPath: foo.bar.yaml
     containerPath: /etc/kubernetes/policies/audit-policy.yaml

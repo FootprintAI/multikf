@@ -18,6 +18,7 @@ type MachineConfiger interface {
 	AuditEnabled() bool
 	GetWorkers() int
 	GetNodeLabels() []NodeLabel
+	GetLocalPath() string
 }
 
 type ExportPortPair struct {
