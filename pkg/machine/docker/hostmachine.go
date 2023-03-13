@@ -118,6 +118,7 @@ func (h *HostMachine) prepareFiles() error {
 		filepath.Join(h.hostMachineDir, "audit-policy.yaml"),
 		h.options.GetWorkers(),
 		h.options.GetNodeLabels(),
+		h.options.GetLocalPath(),
 	)
 
 	vfolder := NewHostFolder(h.hostMachineDir)

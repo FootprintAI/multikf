@@ -74,6 +74,7 @@ type machineConfig struct {
 	auditEnabled    bool
 	workers         int
 	nodeLabels      string
+	localPath       string
 }
 
 func (m machineConfig) GetCPUs() int {
@@ -152,6 +153,10 @@ func (m machineConfig) GetNodeLabels() []machine.NodeLabel {
 	}
 	m.logger.V(1).Infof("getnodelabel: labels:%+v\n", nodeLabels)
 	return nodeLabels
+}
+
+func (m machineConfig) GetLocalPath() string {
+	return m.localPath
 }
 
 type kubeflowPlugin struct {
