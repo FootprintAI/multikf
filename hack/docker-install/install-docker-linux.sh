@@ -23,3 +23,17 @@ echo "usermod -aG docker ubuntu"
 echo "****"
 echo "for user ubuntu"
 echo "And try to logout/login again, and see if `docker ps` works"
+
+# noted(hsiny): use low mtu as harvester use 1450 for default nic
+# see issue https://github.com/harvester/harvester/issues/3822
+tee /etc/docker/daemon.json <<EOF
+{
+    "mtu": 1450
+}
+EOF
+
+# restart dockerd
+systemctl daemon-reload
+systemctl restart docker
+
+
