@@ -7,7 +7,7 @@ deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubelet=1.23.17-00 kubeadm=1.23.17-00 kubectl=1.23.17-00
-apt-get mark kubeadm kubelet kubectl
+apt-mark hold kubeadm kubelet kubectl
 
 # if encountered the following error during install kubelet
 # W: An error occurred during the signature verification. The repository is not updated and the previous index files will be used. GPG error: https://packages.cloud.google.com/apt kubernetes-xenial InRelease: NO_PUBKEY B53DC80D13EDEF05
