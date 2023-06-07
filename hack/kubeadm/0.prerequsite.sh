@@ -13,5 +13,13 @@ bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
 
 
 # disable swap memory
+# or comment the line on /etc/fstab
+#
+# vim /etc/fstab
+# #/swap.img       none    swap    sw      0       0
+# 
+# then reboot the machine
+# or run the following command to disable temporary
 swapoff -a
+
 
