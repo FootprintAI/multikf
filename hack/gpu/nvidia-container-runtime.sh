@@ -16,7 +16,8 @@ apt-get update && apt-get install -y nvidia-container-toolkit nvidia-container-r
 # append /etc/docker/daemon.json with the following config
 tee /etc/docker/daemon.json <<EOF
 {
-    "mtu": 1450,
+    "mtu": 1400,
+    "exec-opts": ["native.cgroupdriver=systemd"],
     "default-runtime": "nvidia",
     "runtimes": {
         "nvidia": {
