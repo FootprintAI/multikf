@@ -29,4 +29,5 @@ apt-get update
 # apt-get install -y nvidia-driver-450 for k80
 
 # or use apt-get install -y nvidia-driver-515 to install previous driver version to avoid conflict in cuda11.8
-apt-get install -y cuda libcudnn8=$cudnn_version-1+$cuda_version libcudnn8-dev=$cudnn_version-1+$cuda_version
+apt-get install -y nvidia-driver-530 libcudnn8=$cudnn_version-1+$cuda_version libcudnn8-dev=$cudnn_version-1+$cuda_version
+apt-mark hold nvidia-driver-530
