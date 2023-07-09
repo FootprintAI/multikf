@@ -33,7 +33,7 @@ systemctl daemon-reload
 systemctl restart docker
 
 # test docker run with nvidia container
-docker run --gpus all nvidia/cuda:10.0-base nvidia-smi > /dev/null
+docker run --gpus all nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi > /dev/null
 if [ $? -eq 0 ]; then
     echo "dockerd with nvidia is ready!"
 else
