@@ -161,24 +161,9 @@ func (h *HostMachine) Up() error {
 	if err := h.kubecli.ProvisonCluster(kindConfigPath); err != nil {
 		return err
 	}
-	// install required pkgs
-	//if err := h.cli.InstallRequiredPkgs(h.containername); err != nil {
-	//	return err
-	//}
 	if err := h.kubecli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
 		return err
 	}
-
-	// FIXME: add me back
-	//if withKubeflow {
-	//	kfManifestPath := filepath.Join(h.hostMachineDir, "kubeflow-manifest-v1.4.1.yaml")
-	//	if err := h.cli.InstallKubeflow(kubeConfigPath, kfManifestPath); err != nil {
-	//		return err
-	//	}
-	//	if err := h.cli.PatchKubeflow(kubeConfigPath); err != nil {
-	//		return err
-	//	}
-	//}
 	return nil
 }
 

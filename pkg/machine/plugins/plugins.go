@@ -97,10 +97,8 @@ func AddPlugins(m machine.MachineCURD, plugins ...Plugin) error {
 	for plugin, tmpl := range pluginAndTmpls {
 		if plugin.PluginType() == TypePluginKubeflow {
 			err = m.GetKubeCli().InstallKubeflow(m.GetKubeConfig(), filepath.Join(m.HostDir(), tmpl.Filename()))
-			if err == nil {
-				if plugin.PluginVersion() == typePluginVersionKF14 {
-					err = m.GetKubeCli().PatchKubeflow(m.GetKubeConfig())
-				}
+			if err != nil {
+				return err
 			}
 		}
 	}

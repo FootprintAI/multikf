@@ -144,16 +144,6 @@ func (cli *CLI) ProvisonCluster(kindConfigfile string) error {
 	return ioutil.StderrOnError(sr)
 }
 
-//func (cli *CLI) InstallRequiredPkgs(containername ContainerName) error {
-//	// TODO: check whether we have to install gpu related pkg
-//	//_, err := cli.RemoteExec(containername, "apt-get update && apt-get install -y pciutils")
-//	//if err != nil {
-//	//	log.Error("cli: failed on install required pkg, err:%v\n", err)
-//	//}
-//	//cli.RemoteExec(containername, "lspci  | grep -i nvidia")
-//	return nil
-//}
-
 func (cli *CLI) InstallKubeflow(kubeConfigFile string, kfmanifestFile string) error {
 	cmdAndArgs := []string{
 		cli.localKubectlBinaryPath,
@@ -195,42 +185,42 @@ func (cli *CLI) RemoveKubeflow(kubeConfigFile string, kfmanifestFile string) err
 	return err
 }
 
-func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
-	multiCmdAndArgs := [][]string{
-		[]string{
-			cli.localKubectlBinaryPath,
-			"patch",
-			"configmap",
-			"workflow-controller-configmap",
-			"--patch",
-			"{\"data\":{\"containerRuntimeExecutor\":\"emissary\"}}",
-			"-n",
-			"kubeflow",
-			"--kubeconfig",
-			kubeConfigFile,
-		},
-		[]string{
-			cli.localKubectlBinaryPath,
-			"rollout",
-			"restart",
-			"deployment/workflow-controller",
-			"-n",
-			"kubeflow",
-			"--kubeconfig",
-			kubeConfigFile,
-		},
-	}
-	for _, cmdAndArgs := range multiCmdAndArgs {
-		sr, _, err := cli.runCmd(cmdAndArgs)
-		if err != nil {
-			return err
-		}
-		ioutil.StderrOnError(sr)
-		time.Sleep(3 * time.Second)
-
-	}
-	return nil
-}
+//func (cli *CLI) PatchKubeflow(kubeConfigFile string) error {
+//	multiCmdAndArgs := [][]string{
+//		[]string{
+//			cli.localKubectlBinaryPath,
+//			"patch",
+//			"configmap",
+//			"workflow-controller-configmap",
+//			"--patch",
+//			"{\"data\":{\"containerRuntimeExecutor\":\"emissary\"}}",
+//			"-n",
+//			"kubeflow",
+//			"--kubeconfig",
+//			kubeConfigFile,
+//		},
+//		[]string{
+//			cli.localKubectlBinaryPath,
+//			"rollout",
+//			"restart",
+//			"deployment/workflow-controller",
+//			"-n",
+//			"kubeflow",
+//			"--kubeconfig",
+//			kubeConfigFile,
+//		},
+//	}
+//	for _, cmdAndArgs := range multiCmdAndArgs {
+//		sr, _, err := cli.runCmd(cmdAndArgs)
+//		if err != nil {
+//			return err
+//		}
+//		ioutil.StderrOnError(sr)
+//		time.Sleep(3 * time.Second)
+//
+//	}
+//	return nil
+//}
 
 func (cli *CLI) Portforward(kubeConfigFile, svc, namespace string, address string, fromPort, toPort int) error {
 	// TODO: auto reconnect
