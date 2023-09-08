@@ -2,8 +2,24 @@
 
 #### v1.23.17 -> 1.24.17
 * docker-shim is removed from kubelet. so you should use `crictl ps` instead of `docker ps` to inspect pod activity.
-* some troubleshutting steps
+* troubleshutting steps
 
+after configured the following files, run
+
+```
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet docker
+```
+
+then run
+
+```
+sudo crictl ps
+```
+should see pods running
+
+
+* configurations
 ```
 cat /etc/crictl.yaml
 
