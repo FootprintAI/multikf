@@ -6,7 +6,7 @@ cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet=1.23.17-00 kubeadm=1.23.17-00 kubectl=1.23.17-00
+apt-get install -y kubelet=1.24.17-00 kubeadm=1.24.17-00 kubectl=1.24.17-00
 apt-mark hold kubeadm kubelet kubectl
 
 # if encountered the following error during install kubelet
