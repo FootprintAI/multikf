@@ -26,12 +26,12 @@ echo "****"
 echo "for user ubuntu"
 echo "And try to logout/login again, and see if `docker ps` works"
 
-# noted(hsiny): use low mtu 1400 to enforce this won't hit any router limits
+# noted(hsiny): use low mtu 1374 to enforce this won't hit any router limits (default 1424 - 50 overhead)
 # see issue https://github.com/harvester/harvester/issues/3822
 tee /etc/docker/daemon.json <<EOF
 {
     "exec-opts": ["native.cgroupdriver=systemd"],
-    "mtu": 1400
+    "mtu": 1374
 }
 EOF
 
