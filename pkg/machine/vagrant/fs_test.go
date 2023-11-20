@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/footprintai/multikf/pkg/machine/vagrant/template"
+	vagranttemplates "github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,20 +32,28 @@ func TestVagrantFile(t *testing.T) {
 	fmt.Printf("tmpdir:%s\n", tmpdir)
 	mockFs := afero.NewBasePathFs(afero.NewOsFs(), tmpdir)
 	vdir := NewVagrantFolder(tmpdir)
-	assert.NoError(t, vdir.GenerateVagrantFiles(&template.TemplateFileConfig{
-		Name:        "unittest",
-		CPUs:        2,
-		Memory:      1026,
-		SSHPort:     1234,
-		KubeApiPort: 5678,
-	}))
+	assert.NoError(t, vdir.GenerateVagrantFiles(vagranttemplates.NewVagrantTemplateConfig(
+		"unittest",
+		2,
+		1026,
+		1234,
+		5678,
+		"1.2.3.4",
+		0,
+		nil,
+		false,
+		"",
+		0,
+		nil,
+		"",
+	),
+	))
 
 	expectedFiles := []string{
 		"Vagrantfile",
 		"kind-config.yaml",
 		"bootstrap/bootstrap.sh",
 		"bootstrap/provision-cluster.sh",
-		"bootstrap/provision-kf14.sh",
 	}
 	for _, expectedfile := range expectedFiles {
 		_, err := mockFs.Stat(expectedfile)

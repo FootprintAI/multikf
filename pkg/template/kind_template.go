@@ -118,7 +118,7 @@ nodes:
         {{- range $i, $p := .NodeLabels}}
         node-labels: "{{$p}}"
         {{- end}}
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
   {{- range $i, $p := .ExportPorts}}
@@ -140,7 +140,7 @@ nodes:
   {{- end}}
 {{- range .Workers }}
 - role: worker
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: {{ .UseGPU}}
   {{- if ne .LocalPath ""}}
   extraMounts:

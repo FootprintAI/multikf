@@ -11,8 +11,11 @@ func FileExists(filepath string) bool {
 
 func Exists(osfs fs.FS, fileName string) bool {
 	_, err := fs.Stat(osfs, fileName)
-	if !os.IsNotExist(err) {
-		return true
+	if os.IsNotExist(err) {
+		return false
 	}
-	return false
+	if err != nil {
+		return false
+	}
+	return true
 }
