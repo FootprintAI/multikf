@@ -110,7 +110,7 @@ nodes:
         node-labels: "ingress-ready=true"
         node-labels: "a=b"
         node-labels: "c=d"
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: true
   extraPortMappings:
   - containerPort: 8081
@@ -123,19 +123,19 @@ nodes:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.25.11@sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
@@ -237,7 +237,7 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  image: kindest/node:v1.23.17@sha256:e5fd1d9cd7a9a50939f9c005684df5a6d145e8d695e78463637b79464292e66c
+  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
   gpus: false
   extraPortMappings:
   - containerPort: 8081

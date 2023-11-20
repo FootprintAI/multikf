@@ -1,6 +1,6 @@
 module github.com/footprintai/multikf
 
-go 1.17
+go 1.20
 
 require (
 	github.com/bmatcuk/go-vagrant v1.6.0
