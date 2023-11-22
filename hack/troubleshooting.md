@@ -33,3 +33,9 @@ sudo vim /etc/sysctl.conf
 
 ```
 then run `sudo sysctl -p` to update such changes into system
+
+#### '/sbin/ldconfig.real': No such file or directory
+
+during installation gpu-operator on kind (kubernetes in docker), `nvidia-operator-validator-67zsz` would failed to run due to `/sbin/ldconfig.real` is not found.
+the simple workaround would be fixed with the symbolic link: `ln -s /sbin/ldconfig /sbin/ldconfig.real`
+
