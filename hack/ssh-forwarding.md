@@ -11,7 +11,7 @@ ssh -R 8222:localhost:22 -i ~/.ssh/<proxy-rsa> ubuntu@<ip-address> -p 9527
 Proxy:
 
 ```
-ssh -L 0.0.0.0:8080:localhost:80 -L 8443:localhost:443 ubuntu@localhost -p 8222
+ssh -L 0.0.0.0:8080:localhost:80 -L 0.0.0.0:8443:localhost:443 ubuntu@localhost -p 8222
 ```
 
 Run check on proxy server:
