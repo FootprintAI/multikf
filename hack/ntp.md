@@ -1,3 +1,14 @@
+### configure timezone
+
+```
+sudo timedatectl set-timezone Asia/Taipei
+
+// verify timezone with cmd
+
+>> date
+>> Mon Dec 25 16:55:59 CST 2023
+```
+
 ### install ntp
 
 
