@@ -20,4 +20,4 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 # taint master node
 kubectl taint nodes --all node-role.kubernetes.io/master-
-
+kubectl taint nodes --all node-role.kubernetes.io/control-plane-
