@@ -10,7 +10,12 @@ vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 + $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS --max-pods=243
 ```
 
+reload with the following commands
+```
 systemctl restart kubelet
-Warning: kubelet.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+
+>> Warning: kubelet.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+
 systemctl daemon-reload
 systemctl restart kubelet
+```
