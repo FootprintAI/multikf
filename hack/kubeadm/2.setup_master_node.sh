@@ -11,8 +11,8 @@ kubeadm init --apiserver-bind-port=8443 \
 
 # move to .kube, so kubectl can work
 mkdir -p $HOME/.kube
-cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # add network plugins
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
@@ -20,4 +20,4 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 # taint master node
 kubectl taint nodes --all node-role.kubernetes.io/master-
-
+kubectl taint nodes --all node-role.kubernetes.io/control-plane-
