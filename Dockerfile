@@ -1,4 +1,4 @@
-FROM golang:1.17.2-stretch AS build
+FROM golang:1.18.3-stretch AS build
 WORKDIR /src
 COPY . .
 
