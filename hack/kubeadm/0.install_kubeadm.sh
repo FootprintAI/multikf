@@ -14,13 +14,14 @@ apt-get install ethtool socat conntrack -y
 # apt-get install -y kubelet=1.25.14-00 kubeadm=1.25.14-00 kubectl=1.25.14-00
 # apt-mark hold kubeadm kubelet kubectl
 
-curl -LO https://dl.k8s.io/release/v1.25.14/bin/linux/amd64/kubectl \
+# version v1.24.17
+curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubectl \
         && chmod +x kubectl \
         && mv kubectl /usr/bin/
-curl -LO https://dl.k8s.io/release/v1.25.14/bin/linux/amd64/kubeadm \
+curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubeadm \
         && chmod +x kubeadm \
         && mv kubeadm /usr/bin/
-curl -LO https://dl.k8s.io/release/v1.25.14/bin/linux/amd64/kubelet \
+curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubelet \
         && chmod +x kubelet \
         && mv kubelet /usr/bin/
 
