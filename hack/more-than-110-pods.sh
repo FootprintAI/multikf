@@ -6,6 +6,9 @@
 ```
 vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
+or 
+vim /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+
 - $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
 + $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS --max-pods=243
 ```
