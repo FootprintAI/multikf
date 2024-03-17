@@ -22,6 +22,12 @@ curl -LO https://dl.k8s.io/release/v1.25.14/bin/linux/amd64/kubelet \
         && chmod +x kubelet \
         && mv kubelet /usr/bin/
 
+# install crictl
+curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz \
+        && tar xzvf crictl-v1.26.0-linux-amd64.tar.gz \
+        && chmod +x crictl \
+        && mv crictl /usr/bin/
+
 # if encountered the following error during install kubelet
 # W: An error occurred during the signature verification. The repository is not updated and the previous index files will be used. GPG error: https://packages.cloud.google.com/apt kubernetes-xenial InRelease: NO_PUBKEY B53DC80D13EDEF05
 # W: https://apt.kubernetes.io/dists/kubernetes-xenial/InRelease...： NO_PUBKEY B53DC80D13EDEF05
