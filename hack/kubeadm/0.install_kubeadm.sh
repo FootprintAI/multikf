@@ -4,8 +4,6 @@
 # as the package repo has changed, see https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/change-package-repository/
 # so we disable the following command, download binaries instead.
 
-apt-get install ethtool socat conntrack -y
-
 # curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 # cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
 # deb https://apt.kubernetes.io/ kubernetes-xenial main
@@ -14,16 +12,29 @@ apt-get install ethtool socat conntrack -y
 # apt-get install -y kubelet=1.25.14-00 kubeadm=1.25.14-00 kubectl=1.25.14-00
 # apt-mark hold kubeadm kubelet kubectl
 
-# version v1.24.17
-curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubectl \
-        && chmod +x kubectl \
-        && mv kubectl /usr/bin/
-curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubeadm \
-        && chmod +x kubeadm \
-        && mv kubeadm /usr/bin/
-curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubelet \
-        && chmod +x kubelet \
-        && mv kubelet /usr/bin/
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.25/deb/ /" |  tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.25/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+## verify pager /etc/apt/sources.list.d/kubernetes.list
+## deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.25/deb/ /
+
+apt-get update
+apt-get install -y kubelet=1.25.14-1.1 kubeadm=1.25.14-1.1 kubectl=1.25.14-1.1
+apt-mark hold kubeadm kubelet kubectl
+
+## version v1.24.17 (this requires additional configuration as apt-get would do that)
+#curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubectl \
+#        && chmod +x kubectl \
+#        && mv kubectl /usr/bin/
+#curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubeadm \
+#        && chmod +x kubeadm \
+#        && mv kubeadm /usr/bin/
+#curl -LO https://dl.k8s.io/release/v1.24.17/bin/linux/amd64/kubelet \
+#        && chmod +x kubelet \
+#        && mv kubelet /usr/bin/
+# add missing package
+# apt-get install ethtool socat conntrack -y
+
 
 # install crictl
 curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz \
