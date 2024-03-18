@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.21.0
 	k8s.io/cli-runtime v0.29.3
-	sigs.k8s.io/kind v0.11.1
+	sigs.k8s.io/kind v0.22.0
 )
 
 require (
