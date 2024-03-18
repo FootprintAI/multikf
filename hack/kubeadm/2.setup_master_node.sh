@@ -18,6 +18,10 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 
-# taint master node
-kubectl taint nodes --all node-role.kubernetes.io/master-
-kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+# untaint master node
+kubectl taint nodes <node-name> node-role.kubernetes.io/master-
+kubectl taint nodes <node-name> node-role.kubernetes.io/control-plane-
+
+## taint master
+# kubectl taint nodes <node-name> node-role.kubernetes.io/master:NoSchedule
+# kubectl taint nodes <node-name> node-role.kubernetes.io/control-plane:NoSchedule
