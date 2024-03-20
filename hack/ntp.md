@@ -14,7 +14,7 @@ sudo timedatectl set-timezone Asia/Taipei
 
 #### install ntp via apt-get 
 ```
-sudo apt-get update && apt-get install -y ntp
+sudo apt-get update && sudo apt-get install -y ntp
 ```
 
 ### allow ntp port on firewall
