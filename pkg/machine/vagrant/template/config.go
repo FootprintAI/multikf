@@ -9,7 +9,7 @@ type VagrantTemplateConfig struct {
 	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func NewVagrantTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string) *VagrantTemplateConfig {
+func NewVagrantTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion string) *VagrantTemplateConfig {
 	return &VagrantTemplateConfig{
 		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
 			name,
@@ -25,6 +25,7 @@ func NewVagrantTemplateConfig(name string, cpus int, memory int, sshport int, ku
 			workerCount,
 			nodeLabels,
 			localPath,
+			nodeVersion,
 		),
 	}
 }

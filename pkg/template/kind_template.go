@@ -31,6 +31,7 @@ func (k *KindFileTemplate) Execute(w io.Writer) error {
 
 type KindConfiger interface {
 	NameGetter
+	NodeVersionGetter
 	KubeAPIPortGetter
 	KubeAPIIPGetter
 	GpuGetter
@@ -47,6 +48,7 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	}
 	c := v.(KindConfiger)
 	k.Name = c.GetName()
+	k.NodeVersion = c.GetNodeVersion()
 	k.KubeAPIPort = c.GetKubeAPIPort()
 	k.KubeAPIIP = c.GetKubeAPIIP()
 	k.UseGPU = c.GetGPUs() > 0
@@ -77,7 +79,12 @@ type KindFileTemplate struct {
 	LocalPath             string
 	Workers               []Worker
 	NodeLabels            []string
+	NodeVersion           string
 }
+
+var (
+	_ TemplateExecutor = &KindFileTemplate{}
+)
 
 var kindDefaultFileTemplate string = `
 kind: Cluster
@@ -118,7 +125,7 @@ nodes:
         {{- range $i, $p := .NodeLabels}}
         node-labels: "{{$p}}"
         {{- end}}
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: {{.NodeVersion}}
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
   {{- range $i, $p := .ExportPorts}}
@@ -140,7 +147,7 @@ nodes:
   {{- end}}
 {{- range .Workers }}
 - role: worker
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: {{ .NodeVersion}}
   gpus: {{ .UseGPU}}
   {{- if ne .LocalPath ""}}
   extraMounts:

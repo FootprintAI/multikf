@@ -1,6 +1,7 @@
 package template
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/footprintai/multikf/pkg/machine"
@@ -14,6 +15,10 @@ type TemplateExecutor interface {
 
 type NameGetter interface {
 	GetName() string
+}
+
+type NodeVersionGetter interface {
+	GetNodeVersion() string
 }
 
 type KubeAPIPortGetter interface {
@@ -55,9 +60,10 @@ type WorkersGetter interface {
 }
 
 type Worker struct {
-	Id        string
-	UseGPU    bool
-	LocalPath string
+	Id          string
+	UseGPU      bool
+	LocalPath   string
+	NodeVersion string
 }
 
 type NodeLabelsGetter interface {
@@ -66,4 +72,13 @@ type NodeLabelsGetter interface {
 
 type LocalPathGetter interface {
 	LocalPath() string
+}
+
+type K8sNodeVersion struct {
+	K8sVersion string // started with v1.26.x
+	SHA256     string
+}
+
+func (k K8sNodeVersion) String() string {
+	return fmt.Sprintf("kindest/node:%s@sha256:%s", k.K8sVersion, k.SHA256)
 }

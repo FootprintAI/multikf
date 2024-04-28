@@ -25,9 +25,10 @@ type DefaultTemplateConfig struct {
 	workerCount           int
 	nodeLabels            []machine.NodeLabel
 	localPath             string
+	nodeVersion           string
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion string) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -42,11 +43,16 @@ func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, ku
 		workerCount:           workerCount,
 		nodeLabels:            nodeLabels,
 		localPath:             localPath,
+		nodeVersion:           nodeVersion,
 	}
 }
 
 func (t *DefaultTemplateConfig) GetName() string {
 	return t.name
+}
+
+func (t *DefaultTemplateConfig) GetNodeVersion() string {
+	return t.nodeVersion
 }
 
 func (t *DefaultTemplateConfig) GetMemory() int {
@@ -89,9 +95,10 @@ func (t *DefaultTemplateConfig) GetWorkers() []template.Worker {
 	ids := make([]template.Worker, t.workerCount, t.workerCount)
 	for i := 0; i < t.workerCount; i++ {
 		ids[i] = template.Worker{
-			Id:        fmt.Sprintf("%d", i),
-			UseGPU:    t.GetGPUs() > 0,
-			LocalPath: t.LocalPath(),
+			Id:          fmt.Sprintf("%d", i),
+			UseGPU:      t.GetGPUs() > 0,
+			LocalPath:   t.LocalPath(),
+			NodeVersion: t.GetNodeVersion(),
 		}
 	}
 	return ids

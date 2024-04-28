@@ -34,6 +34,10 @@ type AuditPolicyFileTemplate struct {
 	auditPolicyFileTemplate string
 }
 
+var (
+	_ TemplateExecutor = &AuditPolicyFileTemplate{}
+)
+
 var auditPolicyDefaultFileTemplate string = `
 apiVersion: audit.k8s.io/v1
 kind: Policy

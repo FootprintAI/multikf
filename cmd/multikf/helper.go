@@ -1,7 +1,9 @@
 package multikf
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -64,46 +66,66 @@ var (
 
 type machineConfig struct {
 	logger          log.Logger
-	cpus            int
-	memoryInG       int
-	useGPUs         int
-	kubeAPIIP       string
-	exportPorts     string
-	defaultPassword string
-	forceOverwrite  bool
-	auditEnabled    bool
-	workers         int
-	nodeLabels      string
-	localPath       string
+	Cpus            int            `json:"cpus"`
+	MemoryInG       int            `json:"memoryInG"`
+	UseGPUs         int            `json:useGpus`
+	KubeAPIIP       string         `json:"kubeapi_ip"`
+	ExportPorts     string         `json:"export_ports"`
+	DefaultPassword string         `json:"default_password"`
+	ForceOverwrite  bool           `json:"force_overwrite"`
+	IsAuditEnabled  bool           `json:"audit_enabled"`
+	Workers         int            `json:"workers"`
+	NodeLabels      string         `json:"node_labels"`
+	LocalPath       string         `json:"local_path"`
+	NodeVersion     K8sNodeVersion `json:"node_version"`
+}
+
+type K8sNodeVersion struct {
+	K8sVersion string `json:"k8s_version"` // started with v1.26.x
+	SHA256     string `json:"sha256"`
+}
+
+func (k K8sNodeVersion) String() string {
+	return fmt.Sprintf("kindest/node:%s@sha256:%s", k.K8sVersion, k.SHA256)
+}
+
+func (m machineConfig) Info() string {
+	bb, _ := json.Marshal(m)
+	return string(bb)
+
+}
+
+func (m machineConfig) GetNodeVersion() string {
+	return m.NodeVersion.String()
 }
 
 func (m machineConfig) GetCPUs() int {
-	return m.cpus
+	return m.Cpus
 }
 
 // GetMemory returns memory amount in M bytes
 func (m machineConfig) GetMemory() int {
-	return m.memoryInG * 1024
+	return m.MemoryInG * 1024
 }
 
 func (m machineConfig) GetGPUs() int {
-	return m.useGPUs
+	return m.UseGPUs
 }
 
 func (m machineConfig) GetKubeAPIIP() string {
-	return m.kubeAPIIP
+	return m.KubeAPIIP
 }
 
 func (m machineConfig) AuditEnabled() bool {
-	return m.auditEnabled
+	return m.IsAuditEnabled
 }
 
 func (m machineConfig) GetExportPorts() []machine.ExportPortPair {
-	if len(m.exportPorts) == 0 {
+	if len(m.ExportPorts) == 0 {
 		m.logger.V(1).Infof("getexportport: export nothing\n")
 		return nil
 	}
-	tokens := strings.Split(m.exportPorts, ",")
+	tokens := strings.Split(m.ExportPorts, ",")
 	var exportPorts []machine.ExportPortPair
 	for _, token := range tokens {
 		subtokens := strings.Split(token, ":")
@@ -128,20 +150,20 @@ func (m machineConfig) GetExportPorts() []machine.ExportPortPair {
 }
 
 func (m machineConfig) GetForceOverwriteConfig() bool {
-	return m.forceOverwrite
+	return m.ForceOverwrite
 }
 
 func (m machineConfig) GetWorkers() int {
-	return m.workers
+	return m.Workers
 }
 
 // a=b,c=d
 func (m machineConfig) GetNodeLabels() []machine.NodeLabel {
-	if len(m.nodeLabels) == 0 {
+	if len(m.NodeLabels) == 0 {
 		m.logger.V(1).Infof("getnodelabel: no label\n")
 		return nil
 	}
-	tokens := strings.Split(m.nodeLabels, ",")
+	tokens := strings.Split(m.NodeLabels, ",")
 	var nodeLabels []machine.NodeLabel
 	for _, token := range tokens {
 		subtokens := strings.Split(token, "=")
@@ -156,7 +178,7 @@ func (m machineConfig) GetNodeLabels() []machine.NodeLabel {
 }
 
 func (m machineConfig) GetLocalPath() string {
-	return m.localPath
+	return m.LocalPath
 }
 
 type kubeflowPlugin struct {
