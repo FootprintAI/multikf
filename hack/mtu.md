@@ -14,7 +14,7 @@ ping: local error: message too long, mtu=1452
 and minues 28 bytes for IP header and ICMP header overhead.
 
 ```
-ping 192.168.1.1 -c 2 -M do -s 1372
+ping 192.168.1.1 -c 2 -M do -s 1374
 ```
 
 #### Update mtu permanently
@@ -41,7 +41,7 @@ network:
         addresses:
         - 8.8.8.8
         search: []
-+      mtu: 1372
++      mtu: 1374
   version: 2
 ```
 
@@ -52,8 +52,8 @@ sudo vim /etc/dhcp/dhclient.conf
 
 ```
 interface "enp2s0" {
-  default interface-mtu 1372;
-  supersede interface-mtu 1372;
+  default interface-mtu 1374;
+  supersede interface-mtu 1374;
 }
 ```
 
