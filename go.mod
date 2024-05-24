@@ -7,7 +7,7 @@ require (
 	github.com/bramvdbogaerde/go-scp v1.4.0
 	github.com/go-cmd/cmd v1.4.2
 	github.com/golang/glog v1.2.1
-	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/go-version v1.7.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.0
