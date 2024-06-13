@@ -1,8 +1,7 @@
 module github.com/footprintai/multikf
 
 go 1.21
-
-toolchain go1.21.5
+toolchain go1.22.3
 
 require (
 	github.com/bmatcuk/go-vagrant v1.6.0
@@ -16,7 +15,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.24.0
-	k8s.io/cli-runtime v0.29.4
+	k8s.io/cli-runtime v0.30.2
 	sigs.k8s.io/kind v0.23.0
 )
 
@@ -83,11 +82,11 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.29.4 // indirect
-	k8s.io/apimachinery v0.29.4 // indirect
-	k8s.io/client-go v0.29.4 // indirect
-	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
+	k8s.io/api v0.30.2 // indirect
+	k8s.io/apimachinery v0.30.2 // indirect
+	k8s.io/client-go v0.30.2 // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.5-0.20230601165947-6ce0bf390ce3 // indirect
