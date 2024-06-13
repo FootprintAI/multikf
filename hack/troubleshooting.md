@@ -39,3 +39,14 @@ then run `sudo sysctl -p` to update such changes into system
 during installation gpu-operator on kind (kubernetes in docker), `nvidia-operator-validator-67zsz` would failed to run due to `/sbin/ldconfig.real` is not found.
 the simple workaround would be fixed with the symbolic link: `ln -s /sbin/ldconfig /sbin/ldconfig.real`
 
+#### etcd keep rebooting ####
+
+when your etcd is keep rebooting, especially you are using kubeadm with v1.27+,
+you might want to turn the flag on by editing the file `/etc/containerd/config.toml` :
+
+```
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+```
+
+ref issue: https://github.com/etcd-io/etcd/issues/13670
