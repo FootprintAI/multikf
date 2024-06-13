@@ -19,6 +19,10 @@ type MachineConfiger interface {
 	GetWorkers() int
 	GetNodeLabels() []NodeLabel
 	GetLocalPath() string
+	GetNodeVersion() string
+
+	// Info displays all configurations
+	Info() string
 }
 
 type ExportPortPair struct {

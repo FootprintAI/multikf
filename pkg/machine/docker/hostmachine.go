@@ -87,6 +87,10 @@ type HostMachine struct {
 	dockercli *DockerCli
 }
 
+var (
+	_ machine.MachineCURD = &HostMachine{}
+)
+
 func (h *HostMachine) ensureFiles() error {
 	f := filepath.Join(h.hostMachineDir, "kind-config.yaml")
 	if !fsutil.FileExists(f) {
@@ -119,6 +123,7 @@ func (h *HostMachine) prepareFiles() error {
 		h.options.GetWorkers(),
 		h.options.GetNodeLabels(),
 		h.options.GetLocalPath(),
+		h.options.GetNodeVersion(),
 	)
 
 	vfolder := NewHostFolder(h.hostMachineDir)
@@ -151,6 +156,8 @@ func (h *HostMachine) GetKubeConfig() string {
 }
 
 func (h *HostMachine) Up() error {
+	h.logger.V(1).Infof("hostmachine(%s): configs:%+v\n", h.name, h.options.Info())
+
 	if err := h.ensureFiles(); err != nil {
 		return err
 	}

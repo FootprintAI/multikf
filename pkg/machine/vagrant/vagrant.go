@@ -1,6 +1,7 @@
 package vagrant
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -78,6 +79,10 @@ type VagrantMachine struct {
 	kubecli           *machinekubectl.CLI
 }
 
+var (
+	_ machine.MachineCURD = &VagrantMachine{}
+)
+
 func (v *VagrantMachine) Type() machine.MachineType {
 	return v.mtype
 }
@@ -96,6 +101,7 @@ func (v *VagrantMachine) GetKubeConfig() string {
 
 func (v *VagrantMachine) Up() error {
 	// TODO: implement with kubeflow options
+	v.logger.V(1).Infof("vagrantmachine(%s): configs:%+v\n", v.name, v.options.Info())
 
 	if err := v.ensureVagrantFiles(); err != nil {
 		return err
@@ -209,6 +215,7 @@ func (v *VagrantMachine) prepareFiles() error {
 		v.options.GetWorkers(),
 		v.options.GetNodeLabels(),
 		v.options.GetLocalPath(),
+		v.options.GetNodeVersion(),
 	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)
@@ -236,6 +243,9 @@ func (vm *VagrantMachines) ListMachines() ([]machine.MachineCURD, error) {
 		}
 	}
 	return machines, nil
+}
+func (vm *VagrantMachines) Destroy() error {
+	return errors.New("not impl")
 }
 
 func hasVagrantfileInDir(folderPath string) bool {

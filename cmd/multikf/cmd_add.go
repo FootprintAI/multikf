@@ -27,6 +27,8 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		exportPorts                 string // export ports on hostmachine
 		forceOverwrite              bool   // force overwrite existing config
 		useLocalPath                string // with localpath
+		withK8sVersion              string
+		withK8sSHA256               string
 	)
 
 	ensureNoGPUForVagrant := func(vag machine.MachineCURDFactory, useGPUs int) error {
@@ -50,16 +52,20 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 
 		m, err := vag.NewMachine(machineName, machineConfig{
 			logger:         logger,
-			cpus:           cpus,
-			memoryInG:      memoryInG,
-			useGPUs:        useGPUs,
-			kubeAPIIP:      withIP,
-			exportPorts:    exportPorts,
-			forceOverwrite: forceOverwrite,
-			auditEnabled:   withAudit,
-			workers:        withWorkers,
-			nodeLabels:     withLabels,
-			localPath:      useLocalPath,
+			Cpus:           cpus,
+			MemoryInG:      memoryInG,
+			UseGPUs:        useGPUs,
+			KubeAPIIP:      withIP,
+			ExportPorts:    exportPorts,
+			ForceOverwrite: forceOverwrite,
+			IsAuditEnabled: withAudit,
+			Workers:        withWorkers,
+			NodeLabels:     withLabels,
+			LocalPath:      useLocalPath,
+			NodeVersion: K8sNodeVersion{
+				K8sVersion: withK8sVersion,
+				SHA256:     withK8sSHA256,
+			},
 		})
 		if err != nil {
 			return err
@@ -98,6 +104,8 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().IntVar(&withWorkers, "with_workers", 0, "use workers (default: 0)")
 	cmd.Flags().StringVar(&withLabels, "with_labels", "", "attach labels, format: key1=value1,key2=value2(default: )")
 	cmd.Flags().StringVar(&useLocalPath, "use_localpath", "", "mount local path to kind cluster")
+	cmd.Flags().StringVar(&withK8sVersion, "with_k8s_version", "v1.27.11", "k8s version, referring to kind")
+	cmd.Flags().StringVar(&withK8sSHA256, "with_k8s_sha256", "681253009e68069b8e01aad36a1e0fa8cf18bb0ab3e5c4069b2e65cafdd70843", "k8s sha256")
 
 	return cmd
 }

@@ -18,6 +18,10 @@ func (s staticConfig) GetName() string {
 	return "staticconfig"
 }
 
+func (s staticConfig) GetNodeVersion() string {
+	return "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb"
+}
+
 func (s staticConfig) GetKubeAPIPort() int {
 	return 8443
 }
@@ -45,19 +49,22 @@ func (s staticConfig) LocalPath() string {
 func (s staticConfig) GetWorkers() []Worker {
 	return []Worker{
 		Worker{
-			Id:        "1",
-			UseGPU:    true,
-			LocalPath: s.LocalPath(),
+			Id:          "1",
+			UseGPU:      true,
+			LocalPath:   s.LocalPath(),
+			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
 		},
 		Worker{
-			Id:        "2",
-			UseGPU:    true,
-			LocalPath: s.LocalPath(),
+			Id:          "2",
+			UseGPU:      true,
+			LocalPath:   s.LocalPath(),
+			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
 		},
 		Worker{
-			Id:        "3",
-			UseGPU:    true,
-			LocalPath: s.LocalPath(),
+			Id:          "3",
+			UseGPU:      true,
+			LocalPath:   s.LocalPath(),
+			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
 		},
 	}
 }
@@ -152,6 +159,10 @@ type auditConfig struct{}
 
 func (s auditConfig) GetName() string {
 	return "auditConfig"
+}
+
+func (s auditConfig) GetNodeVersion() string {
+	return "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb"
 }
 
 func (s auditConfig) GetKubeAPIPort() int {
