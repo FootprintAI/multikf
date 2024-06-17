@@ -1,4 +1,4 @@
-FROM golang:1.21.5-alpine3.19 AS build
+FROM golang:1.21.6-bookworm AS build
 WORKDIR /src
 COPY . .
 

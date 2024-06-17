@@ -5,7 +5,7 @@ GITCOMMITID=$(shell git rev-parse HEAD)
 tidy: 
 	./gomodtidy.sh
 
-docker:
+builddocker:
 	docker build -t footprintai/multikf:v1 \
 		--no-cache -f Dockerfile .
 	docker push footprintai/multikf:v1
