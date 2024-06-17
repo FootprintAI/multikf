@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/afero v1.11.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.24.0
