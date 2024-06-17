@@ -7,6 +7,8 @@ if (( $EUID != 0 )); then
 fi
 
 VERSION_STRING=5:23.0.4-1~ubuntu.20.04~focal
+# or
+#VERSION_STRING=5:26.1.4-1~ubuntu.22.04~jammy
 
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl software-properties-common
