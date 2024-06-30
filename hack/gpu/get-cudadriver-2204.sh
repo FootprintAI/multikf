@@ -7,8 +7,6 @@ if (( $EUID != 0 )); then
 fi
 
 OS=ubuntu2204
-cudnn_version=8.6.0.*
-cuda_version=cuda11.8
 
 echo " this script runs on $OS, for other version please check https://developer.nvidia.com/cuda-downloads"
 
@@ -29,5 +27,21 @@ apt-get update
 # apt-get install -y nvidia-driver-450 for k80
 
 # or use apt-get install -y nvidia-driver-515 to install previous driver version to avoid conflict in cuda11.8
-apt-get install -y nvidia-driver-530 libcudnn8=$cudnn_version-1+$cuda_version libcudnn8-dev=$cudnn_version-1+$cuda_version
+apt-get install -y nvidia-driver-530
 apt-mark hold nvidia-driver-530
+
+
+# install cuda related lib
+## cublas for cuda12, ref: https://developer.nvidia.com/nvidia-hpc-sdk-releases
+## curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
+## echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | tee /etc/apt/sources.list.d/nvhpc.list
+## apt-get update -y
+## apt-get install -y nvhpc-24-5
+
+## install cudnn8 for cuda12, ref: https://developer.nvidia.com/rdp/cudnn-archive
+## https://developer.nvidia.com/downloads/compute/cudnn/secure/8.9.7/local_installers/12.x/cudnn-local-repo-ubuntu2204-8.9.7.29_1.0-1_amd64.deb/
+## you got to login to be able to download it
+## 
+## then run
+## dpkg -i <>.deb
+
