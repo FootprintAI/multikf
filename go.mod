@@ -6,7 +6,7 @@ toolchain go1.21.5
 
 require (
 	github.com/bmatcuk/go-vagrant v1.6.0
-	github.com/bramvdbogaerde/go-scp v1.4.0
+	github.com/bramvdbogaerde/go-scp v1.5.0
 	github.com/go-cmd/cmd v1.4.3
 	github.com/golang/glog v1.2.1
 	github.com/hashicorp/go-version v1.7.0
