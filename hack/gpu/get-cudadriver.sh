@@ -13,7 +13,9 @@ cuda_version=cuda11.8
 echo " this script runs on $OS, for other version please check https://developer.nvidia.com/cuda-downloads"
 
 # purge previous installation
-# apt-get purge -y nvidia*
+# apt-get remove --purge '^nvidia-.*'
+# apt-get remove --purge '^libnvidia-.*'
+# apt-get remove --purge '^cuda-.*'
 
 apt-get update
 apt-get install -y wget
