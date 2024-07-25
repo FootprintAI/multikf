@@ -15,6 +15,12 @@ echo " this script runs on $OS, for other version please check https://developer
 # apt-get remove --purge '^libnvidia-.*'
 # apt-get remove --purge '^cuda-.*'
 
+# fix DKMS driver
+# $ dkms status
+#  nvidia/535.154.05: added
+# $ dkms build nvidia/535.154.05
+# $ dkms install nvidia/535.154.05 --force
+# then reboot
 
 apt-get update
 apt-get install -y wget
