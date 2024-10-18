@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/footprintai/multikf/pkg/template"
 )
@@ -25,10 +26,10 @@ type DefaultTemplateConfig struct {
 	workerCount           int
 	nodeLabels            []machine.NodeLabel
 	localPath             string
-	nodeVersion           string
+	nodeVersion           k8s.KindK8sVersion
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion string) *DefaultTemplateConfig {
+func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion k8s.KindK8sVersion) *DefaultTemplateConfig {
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -51,7 +52,7 @@ func (t *DefaultTemplateConfig) GetName() string {
 	return t.name
 }
 
-func (t *DefaultTemplateConfig) GetNodeVersion() string {
+func (t *DefaultTemplateConfig) GetNodeVersion() k8s.KindK8sVersion {
 	return t.nodeVersion
 }
 
@@ -98,7 +99,7 @@ func (t *DefaultTemplateConfig) GetWorkers() []template.Worker {
 			Id:          fmt.Sprintf("%d", i),
 			UseGPU:      t.GetGPUs() > 0,
 			LocalPath:   t.LocalPath(),
-			NodeVersion: t.GetNodeVersion(),
+			NodeVersion: t.GetNodeVersion().String(),
 		}
 	}
 	return ids

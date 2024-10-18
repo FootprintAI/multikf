@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 
 	"io/fs"
 )
@@ -38,6 +39,7 @@ func ListVersions() []string {
 		versions = append(versions, matched[0])
 		return nil
 	})
+	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
 	return versions
 }
 

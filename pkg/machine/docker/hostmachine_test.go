@@ -7,6 +7,7 @@ import (
 	//"os"
 	"testing"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -20,7 +21,7 @@ func TestHostCmd(t *testing.T) {
 	logger := cmd.NewLogger()
 
 	name := "host001"
-	dir := "/var/folders/gc/cqwxf09s14z7rgpyjyfr3qsh0000gn/T/unittest4190648733"
+	dir := "/tmp/unittest4190648733"
 	assert.NoError(t, os.MkdirAll(dir, os.ModePerm))
 	//defer os.RemoveAll(dir)
 	fmt.Printf("dir:%s\n", dir)
@@ -35,6 +36,14 @@ func TestHostCmd(t *testing.T) {
 }
 
 type noConfigurer struct{}
+
+var (
+	_ machine.MachineConfiger = noConfigurer{}
+)
+
+func (n noConfigurer) Info() string {
+	return ""
+}
 
 func (n noConfigurer) GetCPUs() int {
 	return 1
@@ -66,6 +75,11 @@ func (n noConfigurer) AuditEnabled() bool {
 
 func (n noConfigurer) GetWorkers() int {
 	return 0
+}
+
+func (n noConfigurer) GetNodeVersion() k8s.KindK8sVersion {
+	return k8s.DefaultVersion()
+
 }
 
 func (n noConfigurer) GetNodeLabels() []machine.NodeLabel {

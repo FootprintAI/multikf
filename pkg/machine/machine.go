@@ -1,6 +1,9 @@
 package machine
 
-import "github.com/footprintai/multikf/pkg/machine/kubectl"
+import (
+	"github.com/footprintai/multikf/pkg/k8s"
+	"github.com/footprintai/multikf/pkg/machine/cmd/kubectl"
+)
 
 type MachineCURDFactory interface {
 	EnsureRuntime() error
@@ -19,7 +22,7 @@ type MachineConfiger interface {
 	GetWorkers() int
 	GetNodeLabels() []NodeLabel
 	GetLocalPath() string
-	GetNodeVersion() string
+	GetNodeVersion() k8s.KindK8sVersion
 
 	// Info displays all configurations
 	Info() string

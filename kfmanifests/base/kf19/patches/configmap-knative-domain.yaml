@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-domain
+  namespace: knative-serving
+data:
+  example.com: ""
+#see issue: https://github.com/kserve/kserve/issues/2757

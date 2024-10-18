@@ -48,7 +48,7 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 	}
 	c := v.(KindConfiger)
 	k.Name = c.GetName()
-	k.NodeVersion = c.GetNodeVersion()
+	k.NodeVersion = c.GetNodeVersion().String()
 	k.KubeAPIPort = c.GetKubeAPIPort()
 	k.KubeAPIIP = c.GetKubeAPIIP()
 	k.UseGPU = c.GetGPUs() > 0

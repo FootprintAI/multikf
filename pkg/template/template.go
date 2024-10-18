@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 )
 
@@ -18,7 +19,7 @@ type NameGetter interface {
 }
 
 type NodeVersionGetter interface {
-	GetNodeVersion() string
+	GetNodeVersion() k8s.KindK8sVersion
 }
 
 type KubeAPIPortGetter interface {
@@ -80,5 +81,8 @@ type K8sNodeVersion struct {
 }
 
 func (k K8sNodeVersion) String() string {
+	if k.SHA256 == "" {
+		return fmt.Sprintf("kindest/node:%s", k.K8sVersion)
+	}
 	return fmt.Sprintf("kindest/node:%s@sha256:%s", k.K8sVersion, k.SHA256)
 }
