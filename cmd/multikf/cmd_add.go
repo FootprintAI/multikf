@@ -2,7 +2,11 @@ package multikf
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
+	kfmanifests "github.com/footprintai/multikf/kfmanifests"
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/footprintai/multikf/pkg/machine/plugins"
 	"github.com/footprintai/multikf/pkg/machine/vagrant"
@@ -62,10 +66,10 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			Workers:        withWorkers,
 			NodeLabels:     withLabels,
 			LocalPath:      useLocalPath,
-			NodeVersion: K8sNodeVersion{
-				K8sVersion: withK8sVersion,
-				SHA256:     withK8sSHA256,
-			},
+			NodeVersion: k8s.NewKindK8sVersion(
+				withK8sVersion,
+				withK8sSHA256,
+			),
 		})
 		if err != nil {
 			return err
@@ -89,13 +93,14 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 			return handle(args[0])
 		},
 	}
+	kfVersions := kfmanifests.ListVersions()
 
 	cmd.Flags().StringVar(&provisionerStr, "provisioner", "docker", "provisioner, possible value: docker and vagrant")
 	cmd.Flags().IntVar(&cpus, "cpus", 1, "number of cpus allocated to the guest machine")
 	cmd.Flags().IntVar(&memoryInG, "memoryg", 1, "number of memory in gigabytes allocated to the guest machine")
 	cmd.Flags().BoolVar(&forceOverwrite, "f", false, "force to overwrite existing config. (default: false)")
 	cmd.Flags().BoolVar(&withKubeflow, "with_kubeflow", true, "install kubeflow modules (default: true)")
-	cmd.Flags().StringVar(&withKubeflowVersion, "kubeflow_version", "v1.7.0", "kubeflow version v1.6.1/v1.7.0")
+	cmd.Flags().StringVar(&withKubeflowVersion, "kubeflow_version", kfVersions[0], fmt.Sprintf("support kubeflow version: %s", strings.Join(kfVersions, ",")))
 	cmd.Flags().BoolVar(&withAudit, "with_audit", true, "enable k8s auditing (default: true)")
 	cmd.Flags().StringVar(&withKubeflowDefaultPassword, "with_password", "12341234", "with a specific password for default user (default: 12341234)")
 	cmd.Flags().IntVar(&useGPUs, "use_gpus", 0, "use gpu resources (default: 0), possible value (0 or 1)")
@@ -104,8 +109,8 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().IntVar(&withWorkers, "with_workers", 0, "use workers (default: 0)")
 	cmd.Flags().StringVar(&withLabels, "with_labels", "", "attach labels, format: key1=value1,key2=value2(default: )")
 	cmd.Flags().StringVar(&useLocalPath, "use_localpath", "", "mount local path to kind cluster")
-	cmd.Flags().StringVar(&withK8sVersion, "with_k8s_version", "v1.27.11", "k8s version, referring to kind")
-	cmd.Flags().StringVar(&withK8sSHA256, "with_k8s_sha256", "681253009e68069b8e01aad36a1e0fa8cf18bb0ab3e5c4069b2e65cafdd70843", "k8s sha256")
+	cmd.Flags().StringVar(&withK8sVersion, "with_k8s_version", k8s.DefaultVersion().Version(), fmt.Sprintf("support verisions:%s", strings.Join(k8s.ListVersionString(), ",")))
+	cmd.Flags().StringVar(&withK8sSHA256, "with_k8s_sha256", k8s.DefaultVersion().Sha256(), fmt.Sprintf("k8s version and its sha256 mapping list:%s", strings.Join(k8s.ListVersionSha256String(), ",")))
 
 	return cmd
 }

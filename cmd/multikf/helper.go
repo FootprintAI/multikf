@@ -3,10 +3,10 @@ package multikf
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/footprintai/multikf/pkg/machine/plugins"
 	"sigs.k8s.io/kind/pkg/log"
@@ -66,27 +66,18 @@ var (
 
 type machineConfig struct {
 	logger          log.Logger
-	Cpus            int            `json:"cpus"`
-	MemoryInG       int            `json:"memoryInG"`
-	UseGPUs         int            `json:useGpus`
-	KubeAPIIP       string         `json:"kubeapi_ip"`
-	ExportPorts     string         `json:"export_ports"`
-	DefaultPassword string         `json:"default_password"`
-	ForceOverwrite  bool           `json:"force_overwrite"`
-	IsAuditEnabled  bool           `json:"audit_enabled"`
-	Workers         int            `json:"workers"`
-	NodeLabels      string         `json:"node_labels"`
-	LocalPath       string         `json:"local_path"`
-	NodeVersion     K8sNodeVersion `json:"node_version"`
-}
-
-type K8sNodeVersion struct {
-	K8sVersion string `json:"k8s_version"` // started with v1.26.x
-	SHA256     string `json:"sha256"`
-}
-
-func (k K8sNodeVersion) String() string {
-	return fmt.Sprintf("kindest/node:%s@sha256:%s", k.K8sVersion, k.SHA256)
+	Cpus            int                `json:"cpus"`
+	MemoryInG       int                `json:"memoryInG"`
+	UseGPUs         int                `json:"useGpus"`
+	KubeAPIIP       string             `json:"kubeapi_ip"`
+	ExportPorts     string             `json:"export_ports"`
+	DefaultPassword string             `json:"default_password"`
+	ForceOverwrite  bool               `json:"force_overwrite"`
+	IsAuditEnabled  bool               `json:"audit_enabled"`
+	Workers         int                `json:"workers"`
+	NodeLabels      string             `json:"node_labels"`
+	LocalPath       string             `json:"local_path"`
+	NodeVersion     k8s.KindK8sVersion `json:"node_version"`
 }
 
 func (m machineConfig) Info() string {
@@ -95,8 +86,8 @@ func (m machineConfig) Info() string {
 
 }
 
-func (m machineConfig) GetNodeVersion() string {
-	return m.NodeVersion.String()
+func (m machineConfig) GetNodeVersion() k8s.KindK8sVersion {
+	return m.NodeVersion
 }
 
 func (m machineConfig) GetCPUs() int {

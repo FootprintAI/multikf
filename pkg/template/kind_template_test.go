@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,8 +19,8 @@ func (s staticConfig) GetName() string {
 	return "staticconfig"
 }
 
-func (s staticConfig) GetNodeVersion() string {
-	return "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb"
+func (s staticConfig) GetNodeVersion() k8s.KindK8sVersion {
+	return k8s.DefaultVersion()
 }
 
 func (s staticConfig) GetKubeAPIPort() int {
@@ -48,34 +49,34 @@ func (s staticConfig) LocalPath() string {
 
 func (s staticConfig) GetWorkers() []Worker {
 	return []Worker{
-		Worker{
+		{
 			Id:          "1",
 			UseGPU:      true,
 			LocalPath:   s.LocalPath(),
-			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
+			NodeVersion: "kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110",
 		},
-		Worker{
+		{
 			Id:          "2",
 			UseGPU:      true,
 			LocalPath:   s.LocalPath(),
-			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
+			NodeVersion: "kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110",
 		},
-		Worker{
+		{
 			Id:          "3",
 			UseGPU:      true,
 			LocalPath:   s.LocalPath(),
-			NodeVersion: "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb",
+			NodeVersion: "kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110",
 		},
 	}
 }
 
 func (s staticConfig) GetNodeLabels() []machine.NodeLabel {
 	return []machine.NodeLabel{
-		machine.NodeLabel{
+		{
 			Key:   "a",
 			Value: "b",
 		},
-		machine.NodeLabel{
+		{
 			Key:   "c",
 			Value: "d",
 		},
@@ -84,11 +85,11 @@ func (s staticConfig) GetNodeLabels() []machine.NodeLabel {
 
 func (s staticConfig) GetExportPorts() []machine.ExportPortPair {
 	return []machine.ExportPortPair{
-		machine.ExportPortPair{
+		{
 			HostPort:      80,
 			ContainerPort: 8081,
 		},
-		machine.ExportPortPair{
+		{
 			HostPort:      443,
 			ContainerPort: 8083,
 		},
@@ -117,7 +118,7 @@ nodes:
         node-labels: "ingress-ready=true"
         node-labels: "a=b"
         node-labels: "c=d"
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110
   gpus: true
   extraPortMappings:
   - containerPort: 8081
@@ -130,19 +131,19 @@ nodes:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
     containerPath: /var/local-path-provisioner
 - role: worker
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110
   gpus: true
   extraMounts:
   - hostPath: /mnt/test
@@ -161,8 +162,8 @@ func (s auditConfig) GetName() string {
 	return "auditConfig"
 }
 
-func (s auditConfig) GetNodeVersion() string {
-	return "kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb"
+func (s auditConfig) GetNodeVersion() k8s.KindK8sVersion {
+	return k8s.DefaultVersion()
 }
 
 func (s auditConfig) GetKubeAPIPort() int {
@@ -179,7 +180,7 @@ func (s auditConfig) GetGPUs() int {
 
 func (s auditConfig) GetExportPorts() []machine.ExportPortPair {
 	return []machine.ExportPortPair{
-		machine.ExportPortPair{
+		{
 			HostPort:      80,
 			ContainerPort: 8081,
 		},
@@ -248,7 +249,7 @@ nodes:
     nodeRegistration:
       kubeletExtraArgs:
         node-labels: "ingress-ready=true"
-  image: kindest/node:v1.26.6@sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
+  image: kindest/node:v1.28.13@sha256:45d319897776e11167e4698f6b14938eb4d52eb381d9e3d7a9086c16c69a8110
   gpus: false
   extraPortMappings:
   - containerPort: 8081

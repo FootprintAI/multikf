@@ -11,20 +11,20 @@ import (
 	vagrantclient "github.com/footprintai/multikf/pkg/client/vagrant"
 	machine "github.com/footprintai/multikf/pkg/machine"
 	machinecmd "github.com/footprintai/multikf/pkg/machine/cmd"
+	machinekindcmd "github.com/footprintai/multikf/pkg/machine/cmd/kind"
+	machinekubectlcmd "github.com/footprintai/multikf/pkg/machine/cmd/kubectl"
 	"github.com/footprintai/multikf/pkg/machine/fsutil"
-	"github.com/footprintai/multikf/pkg/machine/kubectl"
-	machinekubectl "github.com/footprintai/multikf/pkg/machine/kubectl"
 	"github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
 func NewVagrantMachines(logger log.Logger, vagrantDir string, verbose bool) machine.MachineCURDFactory {
-	kubecli, _ := machinekubectl.NewCLI(logger, filepath.Join(vagrantDir, "bin"), verbose)
+	kindcli, _ := machinekindcmd.NewCLI(logger, filepath.Join(vagrantDir, "bin"), verbose)
 	return &VagrantMachines{
 		logger:     logger,
 		vagrantDir: vagrantDir,
 		verbose:    verbose,
-		kubecli:    kubecli,
+		kindcli:    kindcli,
 	}
 }
 
@@ -32,7 +32,7 @@ type VagrantMachines struct {
 	logger     log.Logger
 	vagrantDir string
 	verbose    bool
-	kubecli    *machinekubectl.CLI
+	kindcli    *machinekindcmd.CLI
 }
 
 func (vm *VagrantMachines) EnsureRuntime() error {
@@ -51,6 +51,10 @@ func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfig
 	if err := checkMachineNaming(name); err != nil {
 		return nil, err
 	}
+	kubectlcli, err := machinekubectlcmd.NewCLI(vm.logger, filepath.Join(vm.vagrantDir, name), vm.verbose, options.GetNodeVersion())
+	if err != nil {
+		return nil, err
+	}
 	return &VagrantMachine{
 		logger:            vm.logger,
 		mtype:             machine.MachineTypeVagrant,
@@ -58,7 +62,8 @@ func (vm *VagrantMachines) NewMachine(name string, options machine.MachineConfig
 		vagrantMachineDir: filepath.Join(vm.vagrantDir, name),
 		verbose:           vm.verbose,
 		options:           options,
-		kubecli:           vm.kubecli,
+		kubectlcli:        kubectlcli,
+		kindcli:           vm.kindcli,
 	}, nil
 }
 
@@ -76,7 +81,8 @@ type VagrantMachine struct {
 	vagrantMachineDir string
 	verbose           bool
 	options           machine.MachineConfiger
-	kubecli           *machinekubectl.CLI
+	kubectlcli        *machinekubectlcmd.CLI
+	kindcli           *machinekindcmd.CLI
 }
 
 var (
@@ -87,8 +93,8 @@ func (v *VagrantMachine) Type() machine.MachineType {
 	return v.mtype
 }
 
-func (v *VagrantMachine) GetKubeCli() *kubectl.CLI {
-	return v.kubecli
+func (v *VagrantMachine) GetKubeCli() *machinekubectlcmd.CLI {
+	return v.kubectlcli
 }
 
 func (v *VagrantMachine) HostDir() string {

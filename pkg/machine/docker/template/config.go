@@ -1,6 +1,7 @@
 package template
 
 import (
+	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	pkgtemplateconfig "github.com/footprintai/multikf/pkg/template/config"
 )
@@ -9,7 +10,7 @@ type DockerHostmachineTemplateConfig struct {
 	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion string) *DockerHostmachineTemplateConfig {
+func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion k8s.KindK8sVersion) *DockerHostmachineTemplateConfig {
 	return &DockerHostmachineTemplateConfig{
 		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
 			name,

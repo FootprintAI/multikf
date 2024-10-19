@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	vagranttemplates "github.com/footprintai/multikf/pkg/machine/vagrant/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,7 @@ func TestVagrantFile(t *testing.T) {
 		0,
 		nil,
 		"",
+		k8s.DefaultVersion(),
 	),
 	))
 

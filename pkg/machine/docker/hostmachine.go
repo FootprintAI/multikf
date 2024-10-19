@@ -4,23 +4,24 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/footprintai/multikf/pkg/k8s"
 	machine "github.com/footprintai/multikf/pkg/machine"
 	machinecmd "github.com/footprintai/multikf/pkg/machine/cmd"
+	machinekindcmd "github.com/footprintai/multikf/pkg/machine/cmd/kind"
+	machinekubectlcmd "github.com/footprintai/multikf/pkg/machine/cmd/kubectl"
 	"github.com/footprintai/multikf/pkg/machine/docker/template"
 	"github.com/footprintai/multikf/pkg/machine/fsutil"
-	"github.com/footprintai/multikf/pkg/machine/kubectl"
-	machinekubectl "github.com/footprintai/multikf/pkg/machine/kubectl"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
 func NewHostMachines(logger log.Logger, hostDir string, verbose bool) machine.MachineCURDFactory {
-	kubecli, _ := machinekubectl.NewCLI(logger, filepath.Join(hostDir, "bin"), verbose)
+	kindcli, _ := machinekindcmd.NewCLI(logger, filepath.Join(hostDir, "bin"), verbose)
 	dockercli, _ := NewDockerCli(logger, verbose)
 	return &HostMachines{
 		logger:    logger,
 		hostDir:   hostDir,
 		verbose:   verbose,
-		kubecli:   kubecli,
+		kindcli:   kindcli,
 		dockercli: dockercli,
 	}
 }
@@ -41,11 +42,19 @@ type HostMachines struct {
 	logger    log.Logger
 	hostDir   string
 	verbose   bool
-	kubecli   *machinekubectl.CLI
+	kindcli   *machinekindcmd.CLI
 	dockercli *DockerCli
 }
 
 func (hm *HostMachines) NewMachine(name string, options machine.MachineConfiger) (machine.MachineCURD, error) {
+	var nodeVersion k8s.KindK8sVersion
+	if options != nil {
+		nodeVersion = options.GetNodeVersion()
+	}
+	kubectlcli, err := machinekubectlcmd.NewCLI(hm.logger, filepath.Join(hm.hostDir, name), hm.verbose, nodeVersion)
+	if err != nil {
+		return nil, err
+	}
 	return &HostMachine{
 		logger:         hm.logger,
 		mtype:          machine.MachineTypeDocker,
@@ -54,14 +63,15 @@ func (hm *HostMachines) NewMachine(name string, options machine.MachineConfiger)
 		hostMachineDir: filepath.Join(hm.hostDir, name),
 		verbose:        hm.verbose,
 		kubeconfig:     filepath.Join(hm.hostDir, name, "kubeconfig.yaml"),
-		kubecli:        hm.kubecli,
+		kubectlcli:     kubectlcli,
+		kindcli:        hm.kindcli,
 		dockercli:      hm.dockercli,
 		options:        options,
 	}, nil
 }
 
 func (hm *HostMachines) ListMachines() ([]machine.MachineCURD, error) {
-	clusternames, err := hm.kubecli.ListClusters()
+	clusternames, err := hm.kindcli.ListClusters()
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +93,9 @@ type HostMachine struct {
 	kubeconfig     string // filepath to kubeconfig
 	options        machine.MachineConfiger
 
-	kubecli   *machinekubectl.CLI
-	dockercli *DockerCli
+	kubectlcli *machinekubectlcmd.CLI
+	kindcli    *machinekindcmd.CLI
+	dockercli  *DockerCli
 }
 
 var (
@@ -92,6 +103,7 @@ var (
 )
 
 func (h *HostMachine) ensureFiles() error {
+
 	f := filepath.Join(h.hostMachineDir, "kind-config.yaml")
 	if !fsutil.FileExists(f) {
 		h.logger.V(1).Infof("hostmachine(%s): prepare files under %s\n", h.name, h.hostMachineDir)
@@ -143,8 +155,8 @@ func (h *HostMachine) Type() machine.MachineType {
 	return h.mtype
 }
 
-func (h *HostMachine) GetKubeCli() *kubectl.CLI {
-	return h.kubecli
+func (h *HostMachine) GetKubeCli() *machinekubectlcmd.CLI {
+	return h.kubectlcli
 }
 
 func (h *HostMachine) HostDir() string {
@@ -165,10 +177,10 @@ func (h *HostMachine) Up() error {
 	kubeConfigPath := filepath.Join(h.hostMachineDir, "kubeconfig.yaml")
 	h.logger.V(1).Infof("hostmachine(%s): check %s for kubeconfig.yaml\n", h.name, kubeConfigPath)
 
-	if err := h.kubecli.ProvisonCluster(kindConfigPath); err != nil {
+	if err := h.kindcli.ProvisonCluster(kindConfigPath); err != nil {
 		return err
 	}
-	if err := h.kubecli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
+	if err := h.kindcli.GetKubeConfig(h.name, kubeConfigPath); err != nil {
 		return err
 	}
 	return nil
@@ -176,7 +188,7 @@ func (h *HostMachine) Up() error {
 
 func (h *HostMachine) ensureKubeconfig() error {
 	if !fsutil.FileExists(h.kubeconfig) {
-		return h.kubecli.GetKubeConfig(h.name, h.kubeconfig)
+		return h.kindcli.GetKubeConfig(h.name, h.kubeconfig)
 	}
 	return nil
 }
@@ -186,11 +198,11 @@ func (h *HostMachine) ExportKubeConfig(path string, force bool) error {
 		h.logger.Errorf("host: local kubeconfig file %s exists, use -f to force overwrite", path)
 		return fmt.Errorf("local kubeconfig file %s exists, use -f to force overwrite", path)
 	}
-	return h.kubecli.GetKubeConfig(h.name, path)
+	return h.kindcli.GetKubeConfig(h.name, path)
 }
 
 func (h *HostMachine) Destroy() error {
-	return h.kubecli.RemoveCluster(h.name)
+	return h.kindcli.RemoveCluster(h.name)
 }
 
 func (h *HostMachine) Info() (*machine.MachineInfo, error) {
