@@ -9,7 +9,7 @@ kubeadm certs renew all
 then restart kubelet running on the master node (or container if in kind env) with
 
 ```
-systemctm restart kubelet
+systemctl restart kubelet
 ```
 
 
