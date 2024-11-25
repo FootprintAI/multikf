@@ -50,3 +50,16 @@ you might want to turn the flag on by editing the file `/etc/containerd/config.t
 ```
 
 ref issue: https://github.com/etcd-io/etcd/issues/13670
+
+#### node netowrk issue on kind cluster
+
+when your node has network issue where pods are unable to reach each other,
+try: 
+
+```
+sysctl net.bridge.bridge-nf-call-iptables=0
+sysctl net.bridge.bridge-nf-call-arptables=0
+sysctl net.bridge.bridge-nf-call-ip6tables=0
+```
+ to see how it goes.
+ ref: https://github.com/kubernetes-sigs/kind/issues/2886#issuecomment-1219158523
