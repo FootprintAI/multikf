@@ -14,5 +14,5 @@ ARG BuildTime
 
 RUN BUILDDIR=/out make build
 
-FROM alpine:3.20 AS bin
+FROM alpine:3.21 AS bin
 COPY --from=build /out /out
