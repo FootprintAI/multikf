@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/crypto v0.30.0
+	golang.org/x/crypto v0.31.0
 	k8s.io/cli-runtime v0.32.0
 	sigs.k8s.io/kind v0.26.0
 )
