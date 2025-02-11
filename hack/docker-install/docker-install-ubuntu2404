@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# run as root
+if (( $EUID != 0 )); then
+   echo "this script should be running as root identity"
+   exit
+fi
+
+set -e  # Exit immediately if a command exits with a non-zero status
+
+echo "🚀 Installing Docker on Ubuntu 24.04 (Noble Numbat)..."
+
+# Step 1: Update system packages
+sudo apt update -y
+
+# Step 2: Install required dependencies
+sudo apt install -y ca-certificates curl gnupg
+
+# Step 3: Add Docker’s official GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc > /dev/null
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Step 4: Add Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Step 5: Update package index and install Docker
+sudo apt update -y
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Step 6: Start and enable Docker service
+sudo systemctl enable --now docker
+
+# Step 7: Add the current user to the 'docker' group (avoids using sudo with Docker)
+echo "==============================="
+echo "installation completed, please add your user into docker group, something like"
+echo "****"
+echo "usermod -aG docker ubuntu"
+echo "****"
+echo "for user ubuntu"
+echo "And try to logout/login again, and see if `docker ps` works"
+
+echo "✅ Docker installation completed successfully!"
+echo "🚀 Log out and log back in to apply the group changes."
+echo "🔍 Verify by running: docker --version"
