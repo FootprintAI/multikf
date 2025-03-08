@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/mirror"
 )
 
 func NewKindTemplate() *KindFileTemplate {
@@ -40,6 +41,7 @@ type KindConfiger interface {
 	WorkersGetter
 	NodeLabelsGetter
 	LocalPathGetter
+	mirror.Getter // Use the Getter interface from mirror package
 }
 
 func (k *KindFileTemplate) Populate(v interface{}) error {
@@ -64,6 +66,9 @@ func (k *KindFileTemplate) Populate(v interface{}) error {
 		k.NodeLabels[idx] = fmt.Sprintf("%s=%s", nodeLabels[idx].Key, nodeLabels[idx].Value)
 	}
 
+	// Set registry mirrors
+	k.RegistryMirrors = c.GetRegistry()
+
 	return nil
 }
 
@@ -80,6 +85,7 @@ type KindFileTemplate struct {
 	Workers               []Worker
 	NodeLabels            []string
 	NodeVersion           string
+	RegistryMirrors       []mirror.Registry // Using the Registry type from the mirror package
 }
 
 var (
@@ -125,6 +131,22 @@ nodes:
         {{- range $i, $p := .NodeLabels}}
         node-labels: "{{$p}}"
         {{- end}}
+  {{- if .RegistryMirrors}}
+  containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = ""
+      {{- range $mirror := .RegistryMirrors}}
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{$mirror.Source}}"]
+        endpoint = [{{- range $i, $endpoint := $mirror.Mirrors}}{{if $i}}, {{end}}"{{$endpoint}}"{{- end}}]
+      {{- end}}
+      {{- range $mirror := .RegistryMirrors}}
+      {{- if $mirror.Auth}}
+      [plugins."io.containerd.grpc.v1.cri".registry.configs."{{$mirror.Mirrors | first}}"]
+        auth = { username = "{{$mirror.Auth.Username}}", password = "{{$mirror.Auth.Password}}" }
+      {{- end}}
+      {{- end}}
+  {{- end}}
   image: {{.NodeVersion}}
   gpus: {{.UseGPU}}
   {{if .ExportPorts}}extraPortMappings:{{end}}
@@ -149,6 +171,22 @@ nodes:
 - role: worker
   image: {{ .NodeVersion}}
   gpus: {{ .UseGPU}}
+  {{- if $.RegistryMirrors}}
+  containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = ""
+      {{- range $mirror := $.RegistryMirrors}}
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{$mirror.Source}}"]
+        endpoint = [{{- range $i, $endpoint := $mirror.Mirrors}}{{if $i}}, {{end}}"{{$endpoint}}"{{- end}}]
+      {{- end}}
+      {{- range $mirror := $.RegistryMirrors}}
+      {{- if $mirror.Auth}}
+      [plugins."io.containerd.grpc.v1.cri".registry.configs."{{$mirror.Mirrors | first}}"]
+        auth = { username = "{{$mirror.Auth.Username}}", password = "{{$mirror.Auth.Password}}" }
+      {{- end}}
+      {{- end}}
+  {{- end}}
   {{- if ne .LocalPath ""}}
   extraMounts:
   - hostPath: {{.LocalPath}}

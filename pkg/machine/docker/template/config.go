@@ -3,6 +3,7 @@ package template
 import (
 	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/mirror"
 	pkgtemplateconfig "github.com/footprintai/multikf/pkg/template/config"
 )
 
@@ -10,7 +11,23 @@ type DockerHostmachineTemplateConfig struct {
 	*pkgtemplateconfig.DefaultTemplateConfig
 }
 
-func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion k8s.KindK8sVersion) *DockerHostmachineTemplateConfig {
+func NewDockerHostmachineTemplateConfig(
+	name string,
+	cpus int,
+	memory int,
+	sshport int,
+	kubeApiPort int,
+	kubeApiIP string,
+	gpus int,
+	exportPorts []machine.ExportPortPair,
+	auditEnabled bool,
+	auditFileAbsolutePath string,
+	workerCount int,
+	nodeLabels []machine.NodeLabel,
+	localPath string,
+	nodeVersion k8s.KindK8sVersion,
+	registryMirrors []mirror.Registry,
+) *DockerHostmachineTemplateConfig {
 	return &DockerHostmachineTemplateConfig{
 		DefaultTemplateConfig: pkgtemplateconfig.NewDefaultTemplateConfig(
 			name,
@@ -27,6 +44,7 @@ func NewDockerHostmachineTemplateConfig(name string, cpus int, memory int, sshpo
 			nodeLabels,
 			localPath,
 			nodeVersion,
+			registryMirrors,
 		),
 	}
 }
