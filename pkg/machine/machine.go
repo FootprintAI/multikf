@@ -3,6 +3,7 @@ package machine
 import (
 	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine/cmd/kubectl"
+	"github.com/footprintai/multikf/pkg/mirror"
 )
 
 type MachineCURDFactory interface {
@@ -23,7 +24,7 @@ type MachineConfiger interface {
 	GetNodeLabels() []NodeLabel
 	GetLocalPath() string
 	GetNodeVersion() k8s.KindK8sVersion
-
+	mirror.Getter // Embed the mirror.Getter interface
 	// Info displays all configurations
 	Info() string
 }
@@ -63,9 +64,10 @@ type MachineCURD interface {
 }
 
 type MachineInfo struct {
-	CpuInfo *CpuInfo
-	MemInfo *MemInfo
-	GpuInfo *GpuInfo
-	KubeApi string
-	Status  string
+	CpuInfo         *CpuInfo
+	MemInfo         *MemInfo
+	GpuInfo         *GpuInfo
+	KubeApi         string
+	Status          string
+	RegistryMirrors []mirror.Registry // Using the Registry type from mirror package
 }

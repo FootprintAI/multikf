@@ -1,76 +1,78 @@
-# multikf
-Multi-Kind leverages [Vagrant](https://github.com/hashicorp/vagrant) and [Kind](https://github.com/kubernetes-sigs/kind) (Kubernetes In Docker) to create multiple local kubernetes and kubeflow clusters inside the same host machine, see the following png for simple layout
-![flow](./images/intro.png)
+# multikf 
+Multi-Kind leverages [Vagrant](https://github.com/hashicorp/vagrant) and [Kind](https://github.com/kubernetes-sigs/kind) (Kubernetes In Docker) to create multiple local kubernetes and kubeflow clusters inside the same host machine, see the following png for simple layout 
+![flow](./images/intro.png)  
 
-#### Why we need this?
+#### Why we need this?  
 
-As a machine gets more powerful, it is such a waste to have it running just one Kubernetes, especially for the applications which require only a local Kubernetes for practice. One example is our [Kubeflow workshop](https://github.com/footprintai/kubeflow-workshop).
-To fully utilize hardware resources, we leverage vagrant to construct a fully isolated environment and install required packages on it (e.g. Kubernetes and Kubeflow and more ...), map ports for kubeApi and ssh, and also export its kubeconfg to host. Therefore, users on the host machine can easily talk to the guest Kube-API via kubectl.
+As a machine gets more powerful, it is such a waste to have it running just one Kubernetes, especially for the applications which require only a local Kubernetes for practice. One example is our [Kubeflow workshop](https://github.com/footprintai/kubeflow-workshop). To fully utilize hardware resources, we leverage vagrant to construct a fully isolated environment and install required packages on it (e.g. Kubernetes and Kubeflow and more ...), map ports for kubeApi and ssh, and also export its kubeconfg to host. Therefore, users on the host machine can easily talk to the guest Kube-API via kubectl.  
 
-#### When we need this?
+#### When we need this?  
 
-We expected the user are under:
+We expected the user are under:  
+- Windows environemnt with docker desktop installed 
+- Linux environment  
 
-- Windows environemnt with docker desktop installed
-- Linux environment
+and this tool provides abstractions for them to operate clusters.  
 
-and this tool provides abstractions for them to operate clusters.
+#### Why Vagrant is required?  
 
-#### Why Vagrant is required?
+Idealy, we could just use Kind which running as a container to provide resource isolation. However, Kind was unable to isolate resources from its underlying kubelet(see [issue](https://github.com/kubernetes-sigs/kind/issues/877)) due to kubelet's implementation. Thus, Vagrant is served as a resource isolation and provide clean guest enviornment.  
 
-Idealy, we could just use Kind which running as a container to provide resource isolation. However, Kind was unable to isolate resources from its underlying kubelet(see [issue](https://github.com/kubernetes-sigs/kind/issues/877)) due to kubelet's implementation. Thus, Vagrant is served as a resource isolation and provide clean guest enviornment.
+NOTE: Vagrant is not battle-tested, so use it with your cautions.  
 
-NOTE: Vagrant is not battle-tested, so use it with your cautions.
-
-#### How to use?
-
+#### How to use?  
 ```
 Usage:
   multikf add <machine-name> [flags]
 
 Flags:
-      --cpus int               number of cpus allocated to the guest machine (default 1)
-      --export_ports string    export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)
-      --f                      force to create instance regardless the machine status
-  -h, --help                   help for add
-      --memoryg int            number of memory in gigabytes allocated to the guest machine (default 1)
-      --use_gpus int           use gpu resources (default: 0), possible value (0 or 1)
-      --with_ip string         with a specific ip address for kubeapi (default: 0.0.0.0) (default "0.0.0.0")
-      --with_kubeflow          install kubeflow modules (default: true) (default true)
-      --with_password string   with a specific password for default user (default: 12341234) (default "12341234")
+      --cpus int                  number of cpus allocated to the guest machine (default 1)
+      --export_ports string       export ports to host, delimited by comma(example: 8443:443 stands for mapping host port 8443 to container port 443)
+      --f                         force to create instance regardless the machine status
+  -h, --help                      help for add
+      --memoryg int               number of memory in gigabytes allocated to the guest machine (default 1)
+      --use_gpus int              use gpu resources (default: 0), possible value (0 or 1)
+      --with_ip string            with a specific ip address for kubeapi (default: 0.0.0.0) (default "0.0.0.0")
+      --with_kubeflow             install kubeflow modules (default: true) (default true)
+      --with_password string      with a specific password for default user (default: 12341234) (default "12341234")
+      --with_registry_mirrors string  configure registry mirrors, format: source|mirror:username:password,source2|mirror2
 ```
 
-##### Add a vagrant machine named test000 with 1 cpu and 1G memory.
-
+##### Add a vagrant machine named test000 with 1 cpu and 1G memory.  
 ```
 ./multikf add test000 --cpus 1 --memoryg 1 --provisioner=vagrant
 ```
- 
- ##### Add a docker machine named test001 with 1 cpu, 1G memory, and all gpus.
 
+##### Add a docker machine named test001 with 1 cpu, 1G memory, and all gpus.  
 ```
 ./multikf add test000 --cpus=1 --memoryg=1 --use_gpus=1 --provisioner=docker
 ```
- 
- 
- ##### Add a docker machine named test002 with 1 cpu, 1G memory, and password for helloworld.
 
+##### Add a docker machine named test002 with 1 cpu, 1G memory, and password for helloworld.  
 ```
 ./multikf add test000 --cpus=1 --memoryg=16 --with_password=helloworld --provisioner=docker
 ```
 
-##### Export a vargant machine's kubeconfig
+##### Add a docker machine with registry mirrors to a private registry
+```
+./multikf add test003 --cpus=1 --memoryg=1 --with_registry_mirrors="docker.io|https://reg.footprint-ai.com/kubeflow-mirror"
+```
+
+##### Add a docker machine with multiple registry mirrors and authentication
+```
+./multikf add test004 --cpus=1 --memoryg=1 --with_registry_mirrors="docker.io|https://reg.footprint-ai.com/kubeflow-mirror:username:password,k8s.gcr.io|https://reg.footprint-ai.com/k8s-mirror"
+```
+
+##### Export a vargant machine's kubeconfig 
 ```
 ./multikf export test000 --kubeconfig_path /tmp/test000.kubeconfig
 
 run kubectl from host
-
- kubectl get pods --all-namespaces --kubeconfig=/tmp/test000.kubeconfig
+ 
+kubectl get pods --all-namespaces --kubeconfig=/tmp/test000.kubeconfig
 ```
-
-
-##### list machines
-
+ 
+##### list machines  
 ```
 ./multikf list
 
@@ -81,23 +83,50 @@ run kubectl from host
 +---------+------------------+---------+------+---------------+
 ```
 
-##### delete a machine
-
+##### delete a machine  
 ```
 ./multikf delete test000
-
 ```
 
-#### connect a machine
-
+#### connect a machine  
 ```
 ./multikf connect kubeflow test000
-
 ```
 
-#### Roadmap
+#### Registry Mirrors
 
-Fields listed here is on our roadmap.
+You can configure registry mirrors to pull container images from your private registry instead of public registries like Docker Hub. This is useful for:
+
+- Improving pull speeds by using a local mirror
+- Working in air-gapped environments
+- Rate limit mitigation
+- Using custom private registries
+
+##### Examples of Registry Mirror Configurations:
+
+###### Basic mirroring (mirror docker.io to a private registry)
+```
+./multikf add my-cluster --with_registry_mirrors="docker.io|https://reg.footprint-ai.com/kubeflow-mirror"
+```
+
+###### Mirror with authentication
+```
+./multikf add my-cluster --with_registry_mirrors="docker.io|https://reg.footprint-ai.com/kubeflow-mirror:username:password"
+```
+
+###### Multiple registry mirrors with different projects
+```
+./multikf add my-cluster --with_registry_mirrors="docker.io|https://reg.footprint-ai.com/kubeflow-mirror,k8s.gcr.io|https://reg.footprint-ai.com/k8s-mirror"
+```
+
+The format is `source|mirror:username:password` where:
+- `source`: The source registry (e.g., docker.io, k8s.gcr.io)
+- `mirror`: Your private registry URL (including any project path)
+- `username:password`: Optional authentication credentials
+
+#### Roadmap  
+
+Fields listed here is on our roadmap.  
 
 | Fields | machine(Docker) | machine(Vagrant) |
 |------|------|------|
@@ -105,16 +134,13 @@ Fields listed here is on our roadmap.
 | Memory Isolation | O | O |
 | GPU Isolation | O | X |
 | Expose KubeApi IP | O | O |
+ 
+#### Gpu Passthough  
 
-
-#### Gpu Passthough
-
-For passing gpu to docker container, one approach is to use `--gpus=all` when you launched docker container like.
+For passing gpu to docker container, one approach is to use `--gpus=all` when you launched docker container like.  
 
 ```
 docker run -it --gpus=all ubuntu:21.10 /bin/bash
-
 ```
-where it relies on the host's cuda driver.
-However, Kind are NOT supported this approach, see [issue](https://github.com/kubernetes-sigs/kind/pull/1886)
-However, we use our [home-crafted kind](https://github.com/footprintai/kind/tree/gpu) for this purpose.
+
+where it relies on the host's cuda driver. However, Kind are NOT supported this approach, see [issue](https://github.com/kubernetes-sigs/kind/pull/1886) However, we use our [home-crafted kind](https://github.com/footprintai/kind/tree/gpu) for this purpose.
