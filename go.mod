@@ -1,6 +1,7 @@
 module github.com/footprintai/multikf
 
 go 1.23.2
+toolchain go1.24.1
 
 require (
 	github.com/bmatcuk/go-vagrant v1.6.0
@@ -65,7 +66,7 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
