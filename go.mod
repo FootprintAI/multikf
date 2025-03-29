@@ -1,6 +1,7 @@
 module github.com/footprintai/multikf
 
 go 1.23.2
+toolchain go1.24.1
 
 require (
 	github.com/bmatcuk/go-vagrant v1.6.0
@@ -9,7 +10,7 @@ require (
 	github.com/golang/glog v1.2.4
 	github.com/hashicorp/go-version v1.7.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/spf13/afero v1.12.0
+	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
