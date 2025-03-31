@@ -6,6 +6,7 @@ import (
 
 	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/mirror"
 )
 
 type TemplateExecutor interface {
@@ -58,6 +59,11 @@ type AuditEnabler interface {
 
 type WorkersGetter interface {
 	GetWorkers() []Worker
+}
+
+// RegistryGetter defines the interface to get registry mirror configuration
+type RegistryGetter interface {
+	GetRegistryMirrors() []mirror.Registry
 }
 
 type Worker struct {

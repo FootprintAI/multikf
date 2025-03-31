@@ -9,6 +9,7 @@ import (
 	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
 	"github.com/footprintai/multikf/pkg/machine/plugins"
+	"github.com/footprintai/multikf/pkg/mirror"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -78,12 +79,12 @@ type machineConfig struct {
 	NodeLabels      string             `json:"node_labels"`
 	LocalPath       string             `json:"local_path"`
 	NodeVersion     k8s.KindK8sVersion `json:"node_version"`
+	RegistryMirrors string             `json:"registry_mirrors"` // New field for registry mirrors
 }
 
 func (m machineConfig) Info() string {
 	bb, _ := json.Marshal(m)
 	return string(bb)
-
 }
 
 func (m machineConfig) GetNodeVersion() k8s.KindK8sVersion {
@@ -172,6 +173,64 @@ func (m machineConfig) GetLocalPath() string {
 	return m.LocalPath
 }
 
+// GetRegistry implements the mirror.Getter interface
+// Format: source|mirror1,mirror2:username:password,source2|mirror3,mirror4
+// Example: docker.io|https://reg.footprint-ai.com/kubeflow-mirror:username:password,k8s.gcr.io|https://reg.footprint-ai.com/k8s-mirror
+func (m machineConfig) GetRegistry() []mirror.Registry {
+	if len(m.RegistryMirrors) == 0 {
+		m.logger.V(1).Infof("getregistry: no registry mirrors\n")
+		return nil
+	}
+
+	registryEntries := strings.Split(m.RegistryMirrors, ",")
+	var registries []mirror.Registry
+
+	for _, entry := range registryEntries {
+		parts := strings.Split(entry, "|")
+		if len(parts) != 2 {
+			m.logger.Errorf("getregistry: parse failed, expect: source|mirrors but got:%s\n", entry)
+			continue
+		}
+
+		source := parts[0]
+		mirrorParts := strings.Split(parts[1], ":")
+
+		// Check if authentication is provided
+		var auth *mirror.Auth
+		var mirrors []string
+
+		if len(mirrorParts) >= 3 {
+			// Format with auth: mirror:username:password
+			mirrors = []string{mirrorParts[0]}
+			auth = &mirror.Auth{
+				Username: mirrorParts[1],
+				Password: mirrorParts[2],
+			}
+		} else if len(mirrorParts) == 1 {
+			// Format without auth: just mirror
+			mirrors = []string{mirrorParts[0]}
+			auth = nil
+		} else {
+			m.logger.Errorf("getregistry: parse failed, invalid mirror format: %s\n", parts[1])
+			continue
+		}
+
+		registries = append(registries, mirror.Registry{
+			Source:  source,
+			Mirrors: mirrors,
+			Auth:    auth,
+		})
+	}
+
+	m.logger.V(1).Infof("getregistry: registry mirrors:%+v\n", registries)
+	return registries
+}
+
+func AuditFileAbsolutePath() string {
+	// Return the path directly if already set somewhere else in your code
+	return "/path/to/audit/policy.yaml"
+}
+
 type kubeflowPlugin struct {
 	withKubeflowDefaultPassword string
 	kubeflowVersion             plugins.TypePluginVersion
@@ -183,7 +242,6 @@ func (k kubeflowPlugin) PluginType() plugins.TypePlugin {
 
 func (k kubeflowPlugin) PluginVersion() plugins.TypePluginVersion {
 	return k.kubeflowVersion
-
 }
 
 func (k kubeflowPlugin) GetDefaultPassword() string {
