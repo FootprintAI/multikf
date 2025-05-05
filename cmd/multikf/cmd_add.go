@@ -33,6 +33,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		useLocalPath                string // with localpath
 		withK8sVersion              string
 		withK8sSHA256               string
+		withRegistryMirrors         string // with registry mirrors
 	)
 
 	ensureNoGPUForVagrant := func(vag machine.MachineCURDFactory, useGPUs int) error {
@@ -55,17 +56,18 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 		}
 
 		m, err := vag.NewMachine(machineName, machineConfig{
-			logger:         logger,
-			Cpus:           cpus,
-			MemoryInG:      memoryInG,
-			UseGPUs:        useGPUs,
-			KubeAPIIP:      withIP,
-			ExportPorts:    exportPorts,
-			ForceOverwrite: forceOverwrite,
-			IsAuditEnabled: withAudit,
-			Workers:        withWorkers,
-			NodeLabels:     withLabels,
-			LocalPath:      useLocalPath,
+			logger:          logger,
+			Cpus:            cpus,
+			MemoryInG:       memoryInG,
+			UseGPUs:         useGPUs,
+			KubeAPIIP:       withIP,
+			ExportPorts:     exportPorts,
+			ForceOverwrite:  forceOverwrite,
+			IsAuditEnabled:  withAudit,
+			Workers:         withWorkers,
+			NodeLabels:      withLabels,
+			LocalPath:       useLocalPath,
+			RegistryMirrors: withRegistryMirrors,
 			NodeVersion: k8s.NewKindK8sVersion(
 				withK8sVersion,
 				withK8sSHA256,
@@ -111,6 +113,7 @@ func NewAddCommand(logger log.Logger, ioStreams genericclioptions.IOStreams) *co
 	cmd.Flags().StringVar(&useLocalPath, "use_localpath", "", "mount local path to kind cluster")
 	cmd.Flags().StringVar(&withK8sVersion, "with_k8s_version", k8s.DefaultVersion().Version(), fmt.Sprintf("support verisions:%s", strings.Join(k8s.ListVersionString(), ",")))
 	cmd.Flags().StringVar(&withK8sSHA256, "with_k8s_sha256", k8s.DefaultVersion().Sha256(), fmt.Sprintf("k8s version and its sha256 mapping list:%s", strings.Join(k8s.ListVersionSha256String(), ",")))
+	cmd.Flags().StringVar(&withRegistryMirrors, "with_registry_mirrors", "", "configure registry mirrors, format: source|mirror:username:password,source2|mirror2 (example: docker.io|https://reg.footprint-ai.com/kubeflow-mirror:username:password)")
 
 	return cmd
 }

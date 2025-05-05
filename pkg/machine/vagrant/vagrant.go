@@ -222,6 +222,7 @@ func (v *VagrantMachine) prepareFiles() error {
 		v.options.GetNodeLabels(),
 		v.options.GetLocalPath(),
 		v.options.GetNodeVersion(),
+		v.options.GetRegistry(),
 	)
 
 	vfolder := NewVagrantFolder(v.vagrantMachineDir)
