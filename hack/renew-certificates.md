@@ -37,4 +37,9 @@ etcd-ca                 Feb 15, 2033 17:36 UTC   8y              no
 front-proxy-ca          Feb 15, 2033 17:36 UTC   8y              no
 ```
 
+Update admin.conf
+
+`
+mv etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+`
 
