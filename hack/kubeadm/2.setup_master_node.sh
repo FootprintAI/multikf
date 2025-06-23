@@ -33,7 +33,7 @@ kubectl taint nodes <node-name> node-role.kubernetes.io/control-plane-
 kubeadm init --apiserver-bind-port=8443 \
   --apiserver-advertise-address=$PUBLICIP \
   --kubernetes-version=$KUBECTL_VERSION \
-  --pod-network-cidr=10.0.0.0/16 \  # Recommended default for Cilium
+  --pod-network-cidr=10.244.0.0/16 \  # Recommended default for Cilium
   --service-cidr=10.96.0.0/12 \
   --token=$KUBEADM_TOKEN \
   --ignore-preflight-errors=NumCPU \
@@ -51,7 +51,7 @@ tar xzvf cilium-linux-amd64.tar.gz
 sudo mv cilium /usr/local/bin/
 
 # Install Cilium into the cluster
-cilium install
+cilium install --set cluster.id=1 --set cluster.name=kubernetes --set ipam.mode=kubernetes
 
 # Optionally verify installation
 cilium status --wait
