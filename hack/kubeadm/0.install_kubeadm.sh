@@ -27,11 +27,17 @@ mkdir -p /etc/apt/keyrings
 #apt-get update
 #apt-get install -y kubelet=1.27.15-1.1 kubeadm=1.27.15-1.1 kubectl=1.27.15-1.1
 
-### install v1.28.13
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" |  tee /etc/apt/sources.list.d/kubernetes.list
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# ### install v1.28.13
+# echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" |  tee /etc/apt/sources.list.d/kubernetes.list
+# curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+# apt-get update
+# apt-get install -y kubelet=1.28.13-1.1 kubeadm=1.28.13-1.1 kubectl=1.28.13-1.1
+
+### install v1.33.x
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 apt-get update
-apt-get install -y kubelet=1.28.13-1.1 kubeadm=1.28.13-1.1 kubectl=1.28.13-1.1
+apt-get install -y kubelet=1.33.2-1.1 kubeadm=1.33.2-1.1 kubectl=1.33.2-1.1
 
 
 apt-mark hold kubeadm kubelet kubectl
