@@ -6,7 +6,7 @@ if (( $EUID != 0 )); then
    exit
 fi
 
-VERSION_STRING=5:28.1.1-1~ubuntu.22.04~focal
+VERSION_STRING="5:28.1.1-1~ubuntu.20.04~focal"
 apt-get update
 apt-get install ca-certificates curl
 install -m 0755 -d /etc/apt/keyrings
