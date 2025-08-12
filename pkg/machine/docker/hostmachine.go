@@ -136,6 +136,7 @@ func (h *HostMachine) prepareFiles() error {
 		h.options.GetNodeLabels(),
 		h.options.GetLocalPath(),
 		h.options.GetNodeVersion(),
+		h.options.GetRegistry(),
 	)
 
 	vfolder := NewHostFolder(h.hostMachineDir)
