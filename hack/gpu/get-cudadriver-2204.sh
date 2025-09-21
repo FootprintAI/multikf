@@ -1,9 +1,32 @@
 #!/usr/bin/env bash
 
+# Usage: ./get-cudadriver-2204.sh [CUDA_VERSION]
+# Example: ./get-cudadriver-2204.sh 11-8
+# Example: ./get-cudadriver-2204.sh 12-0
+# If no version specified, installs latest available
+
 # run as root
 if (( $EUID != 0 )); then
    echo "this script should be running as root identity"
-   exit
+   exit 1
+fi
+
+# Parse CUDA version parameter
+CUDA_VERSION=${1:-"latest"}
+
+# Validate CUDA version format (should be like 11-8, 12-0, etc.)
+if [[ "$CUDA_VERSION" != "latest" ]] && [[ ! "$CUDA_VERSION" =~ ^[0-9]+-[0-9]+$ ]]; then
+    echo "Error: Invalid CUDA version format. Use format like '11-8' or '12-0'"
+    echo "Available versions: 11-8, 12-0, 12-1, 12-2, 12-3, 12-4, 12-5, 12-6"
+    echo "Usage: $0 [CUDA_VERSION]"
+    echo "Example: $0 11-8"
+    exit 1
+fi
+
+if [[ "$CUDA_VERSION" != "latest" ]]; then
+    echo "Installing CUDA version: $CUDA_VERSION"
+else
+    echo "Installing latest CUDA version"
 fi
 
 OS=ubuntu2204
@@ -39,6 +62,16 @@ apt-get update
 apt-get install -y nvidia-driver-530
 apt-mark hold nvidia-driver-530
 
+
+# install CUDA toolkit
+if [[ "$CUDA_VERSION" != "latest" ]]; then
+    echo "Installing CUDA toolkit version: cuda-$CUDA_VERSION"
+    apt-get install -y cuda-$CUDA_VERSION
+    apt-mark hold cuda-$CUDA_VERSION
+else
+    echo "Installing latest CUDA toolkit"
+    apt-get install -y cuda
+fi
 
 # install cuda related lib
 ## cublas for cuda12, ref: https://developer.nvidia.com/nvidia-hpc-sdk-releases
