@@ -1,0 +1,32 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: gpu-cluster4
+nodes:
+  - role: control-plane
+    extraMounts:
+      # GPU device access via CDI
+      - hostPath: /dev/null
+        containerPath: /var/run/nvidia-container-devices/all
+      # Mount NVIDIA libraries from host /lib
+      - hostPath: /lib/x86_64-linux-gnu
+        containerPath: /host-lib
+        readOnly: true
+      # Mount NVIDIA libraries from host /usr/lib (this has libnvidia-ml.so)
+      - hostPath: /usr/lib/x86_64-linux-gnu
+        containerPath: /host-usr-lib
+        readOnly: true
+      # Mount devices
+      - hostPath: /dev
+        containerPath: /host-dev
+  - role: worker
+    extraMounts:
+      - hostPath: /dev/null
+        containerPath: /var/run/nvidia-container-devices/all
+      - hostPath: /lib/x86_64-linux-gnu
+        containerPath: /host-lib
+        readOnly: true
+      - hostPath: /usr/lib/x86_64-linux-gnu
+        containerPath: /host-usr-lib
+        readOnly: true
+      - hostPath: /dev
+        containerPath: /host-dev

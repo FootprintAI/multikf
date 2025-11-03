@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+      - name: host-sys
+        hostPath:
+          path: /sys
+      - name: host-dev
+        hostPath:
+          path: /dev
+      initContainers:
+      - name: nvidia-driver-setup
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "=== Checking for NVIDIA devices ==="
+          ls -la /host-dev/nvidia* || echo "No NVIDIA devices found in /host-dev"
+
+          echo "=== Checking for NVIDIA libraries in host ==="
+          find /lib -name "libnvidia-ml.so*" 2>/dev/null || echo "Libraries not in /lib"
+          find /usr/lib -name "libnvidia-ml.so*" 2>/dev/null || echo "Libraries not in /usr/lib"
+
+          echo "=== Setup complete ==="
+        volumeMounts:
+        - name: host-dev
+          mountPath: /host-dev
+        securityContext:
+          privileged: true
+      containers:
+      - name: nvidia-device-plugin-ctr
+        image: nvcr.io/nvidia/k8s-device-plugin:v0.14.5
+        env:
+        - name: FAIL_ON_INIT_ERROR
+          value: "false"
+        - name: PASS_DEVICE_SPECS
+          value: "true"
+        - name: DEVICE_LIST_STRATEGY
+          value: "envvar"
+        - name: DEVICE_ID_STRATEGY
+          value: "uuid"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+        - name: host-dev
+          mountPath: /dev
