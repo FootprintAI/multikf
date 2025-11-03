@@ -119,6 +119,10 @@ spec:
 
 ### Main Scripts
 - **`recreate-cluster.sh`** - Main script to create/recreate the cluster with GPU support
+  - Environment variables:
+    - `USE_PREBUILT_IMAGE` (default: `true`) - Use pre-built image with libraries
+    - `KIND_NODE_IMAGE` (default: `asia-east1-docker.pkg.dev/footprintai-dev/kafeido-mlops/kindest/node-cuda:v1.33.2`)
+- **`build-kind-gpu-image.sh`** - Build custom Kind node image with NVIDIA libraries
 - **`test-gpu.sh`** - Test GPU access and verify setup
 - **`apply-fixed-device-plugin.sh`** - Redeploy device plugin after changes
 
