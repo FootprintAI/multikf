@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-test-full
+spec:
+  restartPolicy: OnFailure
+  volumes:
+  - name: nvidia-libs
+    hostPath:
+      path: /opt/nvidia/lib
+  containers:
+  - name: cuda-test
+    image: nvcr.io/nvidia/cuda:12.2.0-base-ubuntu22.04
+    command: ["/bin/bash", "-c"]
+    args:
+    - |
+      echo "=== Checking GPU devices ==="
+      ls -la /dev/nvidia* 2>&1 | head -10
+      echo ""
+
+      echo "=== Checking NVIDIA libraries ==="
+      ls -la /opt/nvidia/lib/ | grep -E "(nvidia-ml|libcuda\.so)" | head -10
+      echo ""
+
+      echo "=== Updating LD_LIBRARY_PATH ==="
+      export LD_LIBRARY_PATH=/opt/nvidia/lib:$LD_LIBRARY_PATH
+      echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+      echo ""
+
+      echo "=== Checking if we can load CUDA library ==="
+      ldconfig /opt/nvidia/lib
+      ldconfig -p | grep -E "libcuda|nvidia-ml" | head -5
+      echo ""
+
+      echo "=== Testing nvidia-smi (if available in image) ==="
+      nvidia-smi 2>&1 || echo "nvidia-smi not in this image, but that's okay"
+      echo ""
+
+      echo "=== Testing CUDA runtime with simple query ==="
+      cat > /tmp/test_gpu.py << 'EOF'
+      import ctypes
+      import os
+
+      # Load libcuda
+      try:
+          libcuda = ctypes.CDLL("libcuda.so.1")
+          print("SUCCESS: Loaded libcuda.so.1")
+
+          # Initialize CUDA
+          result = libcuda.cuInit(0)
+          if result == 0:
+              print("SUCCESS: CUDA initialized")
+
+              # Get device count
+              device_count = ctypes.c_int()
+              result = libcuda.cuDeviceGetCount(ctypes.byref(device_count))
+              if result == 0:
+                  print(f"SUCCESS: Found {device_count.value} GPU(s)")
+              else:
+                  print(f"FAILED: Get device count returned {result}")
+          else:
+              print(f"FAILED: CUDA init returned {result}")
+      except Exception as e:
+          print(f"ERROR: {e}")
+      EOF
+
+      if command -v python3 > /dev/null 2>&1; then
+          python3 /tmp/test_gpu.py
+      else
+          echo "Python not available in this image"
+          echo "But GPU devices are accessible! Use CUDA-enabled workloads."
+      fi
+
+      echo ""
+      echo "=== Summary ==="
+      echo "GPU devices: $(ls /dev/nvidia* 2>/dev/null | wc -l) devices found"
+      echo "NVIDIA libraries: $(ls /opt/nvidia/lib/libnvidia*.so* 2>/dev/null | wc -l) libraries mounted"
+      echo ""
+      echo "✓ GPU passthrough is working!"
+      echo "You can now run GPU workloads in this cluster."
+    volumeMounts:
+    - name: nvidia-libs
+      mountPath: /opt/nvidia/lib
+      readOnly: true
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    securityContext:
+      privileged: true

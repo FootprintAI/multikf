@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+      - name: nvidia-install-dir
+        emptyDir: {}  # Shared between init and main container
+      - name: host-lib
+        hostPath:
+          path: /host-lib  # /lib/x86_64-linux-gnu from host
+      - name: host-usr-lib
+        hostPath:
+          path: /host-usr-lib  # /usr/lib/x86_64-linux-gnu from host
+      initContainers:
+      - name: nvidia-driver-installer
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /nvidia-install/lib
+          # Copy libraries from both host-lib and host-usr-lib
+          echo "Copying from /host-lib..."
+          cp -av /host-lib/libnvidia*.so* /nvidia-install/lib/ 2>&1 || true
+          cp -av /host-lib/libcuda*.so* /nvidia-install/lib/ 2>&1 || true
+          echo "Copying from /host-usr-lib..."
+          cp -av /host-usr-lib/libnvidia*.so* /nvidia-install/lib/ 2>&1 || true
+          cp -av /host-usr-lib/libcuda*.so* /nvidia-install/lib/ 2>&1 || true
+          echo "=== Libraries copied to /nvidia-install/lib ==="
+          ls -la /nvidia-install/lib/ | grep -E "(nvidia|cuda)" | head -20
+          echo "=== Checking for critical library ==="
+          ls -la /nvidia-install/lib/libnvidia-ml.so* || echo "WARNING: libnvidia-ml.so not found!"
+        volumeMounts:
+        - name: nvidia-install-dir
+          mountPath: /nvidia-install
+        - name: host-lib
+          mountPath: /host-lib
+          readOnly: true
+        - name: host-usr-lib
+          mountPath: /host-usr-lib
+          readOnly: true
+      containers:
+      - name: nvidia-device-plugin-ctr
+        image: nvcr.io/nvidia/k8s-device-plugin:v0.14.5
+        env:
+        - name: LD_LIBRARY_PATH
+          value: "/nvidia-install/lib"  # Point to shared libraries
+        - name: FAIL_ON_INIT_ERROR
+          value: "false"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+        - name: nvidia-install-dir
+          mountPath: /nvidia-install
+          readOnly: true

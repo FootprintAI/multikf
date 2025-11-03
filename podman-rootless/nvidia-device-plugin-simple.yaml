@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+      - name: host-dev
+        hostPath:
+          path: /dev
+      - name: nvidia-libs
+        hostPath:
+          path: /opt/nvidia/lib
+      containers:
+      - name: nvidia-device-plugin-ctr
+        image: nvcr.io/nvidia/k8s-device-plugin:v0.14.5
+        env:
+        - name: FAIL_ON_INIT_ERROR
+          value: "false"
+        - name: PASS_DEVICE_SPECS
+          value: "true"
+        - name: DEVICE_LIST_STRATEGY
+          value: "envvar"
+        - name: DEVICE_ID_STRATEGY
+          value: "uuid"
+        - name: LD_LIBRARY_PATH
+          value: "/opt/nvidia/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+        - name: host-dev
+          mountPath: /dev
+        - name: nvidia-libs
+          mountPath: /opt/nvidia/lib
+          readOnly: true
