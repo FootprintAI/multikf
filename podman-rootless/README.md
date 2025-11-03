@@ -12,17 +12,40 @@ GPU passthrough is **working**! The setup provides:
 
 ## 🚀 Quick Start
 
-### Create/Recreate the Cluster
+### Option 1: Using Pre-built Image (Recommended)
 
 ```bash
 cd ~/multikf/multikf
+# Uses pre-built image by default, skips library copying
 ./podman-rootless/recreate-cluster.sh
 ```
 
-This script will:
+### Option 2: Building from Scratch
+
+```bash
+# Build the custom image with NVIDIA libraries
+./podman-rootless/build-kind-gpu-image.sh
+
+# Push to registry
+podman push asia-east1-docker.pkg.dev/footprintai-dev/kafeido-mlops/kindest/node-cuda:v1.33.2
+
+# Use the image
+./podman-rootless/recreate-cluster.sh
+```
+
+### Option 3: Using Standard Image + Library Copy
+
+```bash
+# Set environment variables to use standard image and copy libraries
+export USE_PREBUILT_IMAGE=false
+export KIND_NODE_IMAGE=kindest/node:v1.33.2
+./podman-rootless/recreate-cluster.sh
+```
+
+The `recreate-cluster.sh` script will:
 1. Delete any existing cluster
 2. Create a new Kind cluster with GPU support
-3. Copy NVIDIA libraries to isolated directory (`/opt/nvidia/lib`)
+3. Either use pre-built image OR copy NVIDIA libraries to `/opt/nvidia/lib`
 4. Deploy the NVIDIA device plugin
 5. Verify GPU capacity on nodes
 

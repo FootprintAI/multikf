@@ -7,6 +7,11 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Configuration
+# Set USE_PREBUILT_IMAGE=true if using pre-built image with NVIDIA libraries
+USE_PREBUILT_IMAGE="${USE_PREBUILT_IMAGE:-true}"
+KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-asia-east1-docker.pkg.dev/footprintai-dev/kafeido-mlops/kindest/node-cuda:v1.33.2}"
+
 echo "=========================================="
 echo "Recreating kind cluster with GPU support"
 echo "=========================================="
@@ -17,12 +22,15 @@ echo "Step 1: Deleting existing cluster..."
 kind delete cluster --name gpu-cluster4 || echo "Cluster doesn't exist, continuing..."
 echo ""
 
-# Create new cluster (basic config, mounts won't work in rootless podman)
+# Create new cluster
 echo "Step 2: Creating new cluster..."
+echo "Using image: $KIND_NODE_IMAGE"
+echo "Pre-built image: $USE_PREBUILT_IMAGE"
+
 KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster \
   --name gpu-cluster4 \
   --config "$SCRIPT_DIR/gpu-kind-config.yaml" \
-  --image kindest/node:v1.33.2
+  --image "$KIND_NODE_IMAGE"
 echo ""
 
 # Wait for cluster to be ready
@@ -32,8 +40,25 @@ echo ""
 
 # Setup NVIDIA libraries in nodes (workaround for rootless podman mount issues)
 echo "Step 4: Setting up NVIDIA libraries in kind nodes..."
-echo "Note: Bind mounts don't work properly in rootless Podman, so we copy libraries directly"
-echo ""
+
+if [ "$USE_PREBUILT_IMAGE" = "true" ]; then
+    echo "✓ Using pre-built image with NVIDIA libraries included"
+    echo "  Skipping library copy step"
+    echo ""
+
+    # Just verify libraries exist
+    echo "Verifying libraries in nodes..."
+    for node in gpu-cluster4-control-plane gpu-cluster4-worker; do
+        if podman ps --filter "name=$node" --format "{{.Names}}" | grep -q "$node" 2>/dev/null; then
+            echo "  $node:"
+            podman exec $node bash -c "ls /opt/nvidia/lib 2>/dev/null | grep -E '(nvidia-ml|libcuda)' | head -3" || echo "    WARNING: Libraries not found!"
+        fi
+    done
+    echo ""
+else
+    echo "Note: Copying NVIDIA libraries from host (USE_PREBUILT_IMAGE=false)"
+    echo ""
+fi
 
 # Function to setup a node
 setup_node() {
@@ -74,12 +99,15 @@ SETUP2
     echo ""
 }
 
-# Setup control-plane
-setup_node "gpu-cluster4-control-plane"
+# Only run setup if not using pre-built image
+if [ "$USE_PREBUILT_IMAGE" != "true" ]; then
+    # Setup control-plane
+    setup_node "gpu-cluster4-control-plane"
 
-# Setup worker if it exists
-if podman ps --filter "name=gpu-cluster4-worker" --format "{{.Names}}" | grep -q worker; then
-    setup_node "gpu-cluster4-worker"
+    # Setup worker if it exists
+    if podman ps --filter "name=gpu-cluster4-worker" --format "{{.Names}}" | grep -q worker; then
+        setup_node "gpu-cluster4-worker"
+    fi
 fi
 
 # Deploy device plugin
