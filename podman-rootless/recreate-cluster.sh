@@ -8,9 +8,14 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configuration
-# Set USE_PREBUILT_IMAGE=true if using pre-built image with NVIDIA libraries
+# Set USE_PREBUILT_IMAGE=true if using pre-built image with prerequisites installed
+# Note: NVIDIA libraries will still be copied from host to avoid version mismatch
 USE_PREBUILT_IMAGE="${USE_PREBUILT_IMAGE:-true}"
 KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-asia-east1-docker.pkg.dev/footprintai-dev/kafeido-mlops/kindest/node-cuda:v1.33.2}"
+
+# Always copy libraries to avoid driver version mismatch
+# Pre-built image only saves time on apt-get installs
+ALWAYS_COPY_LIBS="${ALWAYS_COPY_LIBS:-true}"
 
 echo "=========================================="
 echo "Recreating kind cluster with GPU support"
@@ -42,39 +47,41 @@ echo ""
 echo "Step 4: Setting up NVIDIA libraries in kind nodes..."
 
 if [ "$USE_PREBUILT_IMAGE" = "true" ]; then
-    echo "✓ Using pre-built image with NVIDIA libraries included"
-    echo "  Skipping library copy step"
-    echo ""
-
-    # Just verify libraries exist
-    echo "Verifying libraries in nodes..."
-    for node in gpu-cluster4-control-plane gpu-cluster4-worker; do
-        if podman ps --filter "name=$node" --format "{{.Names}}" | grep -q "$node" 2>/dev/null; then
-            echo "  $node:"
-            podman exec $node bash -c "ls /opt/nvidia/lib 2>/dev/null | grep -E '(nvidia-ml|libcuda)' | head -3" || echo "    WARNING: Libraries not found!"
-        fi
-    done
-    echo ""
+    echo "Using pre-built image with prerequisites installed"
+    if [ "$ALWAYS_COPY_LIBS" = "true" ]; then
+        echo "⚠ Copying libraries from runtime host to avoid driver version mismatch"
+        echo "  (Libraries must match the kernel driver version)"
+    else
+        echo "✓ Skipping library copy (ALWAYS_COPY_LIBS=false)"
+        echo "  ⚠ Warning: This may cause version mismatch errors!"
+    fi
 else
-    echo "Note: Copying NVIDIA libraries from host (USE_PREBUILT_IMAGE=false)"
-    echo ""
+    echo "Using standard image, will install prerequisites and copy libraries"
 fi
+echo ""
 
 # Function to setup a node
 setup_node() {
     local node=$1
+    local skip_apt=$2
     echo "Setting up node: $node"
     echo "-------------------"
 
-    # Install prerequisites and create directories
-    podman exec -i $node bash << 'SETUP'
+    if [ "$skip_apt" != "true" ]; then
+        # Install prerequisites (skip if using pre-built image)
+        echo "  Installing prerequisites..."
+        podman exec -i $node bash << 'SETUP'
 set -e
 apt-get update -qq
 apt-get install -y curl gnupg wget > /dev/null 2>&1
 mkdir -p /opt/nvidia/lib
 SETUP
+    else
+        echo "  Skipping apt-get (using pre-built image)"
+        podman exec -i $node bash -c "mkdir -p /opt/nvidia/lib"
+    fi
 
-    echo "  Copying NVIDIA libraries from host to isolated directory..."
+    echo "  Copying NVIDIA libraries from runtime host..."
     # Copy from host /lib/x86_64-linux-gnu - only NVIDIA and CUDA libraries
     for lib in /lib/x86_64-linux-gnu/libnvidia*.so* /lib/x86_64-linux-gnu/libcuda*.so*; do
         if [ -e "$lib" ]; then
@@ -99,14 +106,23 @@ SETUP2
     echo ""
 }
 
-# Only run setup if not using pre-built image
-if [ "$USE_PREBUILT_IMAGE" != "true" ]; then
+# Run setup based on configuration
+if [ "$USE_PREBUILT_IMAGE" = "true" ] && [ "$ALWAYS_COPY_LIBS" != "true" ]; then
+    # Skip everything if using pre-built image and not copying libs
+    echo "Skipping node setup (using pre-built image with ALWAYS_COPY_LIBS=false)"
+else
+    # Determine if we should skip apt-get
+    SKIP_APT="false"
+    if [ "$USE_PREBUILT_IMAGE" = "true" ]; then
+        SKIP_APT="true"
+    fi
+
     # Setup control-plane
-    setup_node "gpu-cluster4-control-plane"
+    setup_node "gpu-cluster4-control-plane" "$SKIP_APT"
 
     # Setup worker if it exists
     if podman ps --filter "name=gpu-cluster4-worker" --format "{{.Names}}" | grep -q worker; then
-        setup_node "gpu-cluster4-worker"
+        setup_node "gpu-cluster4-worker" "$SKIP_APT"
     fi
 fi
 
