@@ -1,0 +1,272 @@
+### running rootless podman with k8s kind using gpu passthrough
+### what we found previously is to copy the nvidia related library to the kind's node
+
+
+
+# 0. Check env
+
+```
+# Check Ubuntu version
+cat /etc/os-release
+
+# Check if NVIDIA drivers are installed
+nvidia-smi
+
+# Check if cgroup v2 is enabled (should show v2)
+stat -fc %T /sys/fs/cgroup/
+# Should output: cgroup2fs
+
+```
+
+#1. 
+
+```
+# Create delegate configuration
+sudo mkdir -p /etc/systemd/system/user@.service.d
+
+cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+[Service]
+Delegate=cpu cpuset io memory pids
+EOF
+
+# Reload systemd
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl restart user@$(id -u).service
+
+# Check delegated controllers (should show: cpu cpuset io memory pids)
+cat /sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers
+
+```
+# Install Container Toolkit
+
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+  sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# Update package list
+sudo apt-get update
+
+# Install NVIDIA Container Toolkit
+sudo apt-get install -y nvidia-container-toolkit nvidia-container-runtime
+
+# Verify installation
+nvidia-ctk --version
+```
+
+Install Runc
+```
+sudo apt install -y runc
+```
+
+# 1. Generate CDI specification on HOST
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
+# 2. Configure no-cgroups for rootless/Kind environments
+sudo tee -a /etc/nvidia-container-runtime/config.toml << 'EOF'
+[nvidia-container-cli]
+no-cgroups = true
+EOF
+
+# 3. Delete and recreate Kind cluster (with GPU devices mounted)
+kind delete cluster --name gpu-cluster4
+KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster --name gpu-cluster4
+
+```gpu-kind-config.yaml
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: gpu-cluster4
+nodes:
+  - role: control-plane
+    extraMounts:
+      # GPU device access via CDI
+      - hostPath: /dev/null
+        containerPath: /var/run/nvidia-container-devices/all
+      # Mount NVIDIA libraries from host
+      - hostPath: /lib/x86_64-linux-gnu
+        containerPath: /host-lib
+        readOnly: true
+      # Mount devices
+      - hostPath: /dev
+        containerPath: /host-dev
+  - role: worker
+    extraMounts:
+      - hostPath: /dev/null
+        containerPath: /var/run/nvidia-container-devices/all
+      - hostPath: /lib/x86_64-linux-gnu
+        containerPath: /host-lib
+        readOnly: true
+      - hostPath: /dev
+        containerPath: /host-dev
+
+```
+
+```
+ubuntu@poc0llm02:~$ cat /etc/containers/containers.conf
+[engine]
+default_runtime = "runc"
+
+[engine.runtimes]
+nvidia = ["/usr/bin/nvidia-container-runtime"]
+```
+
+# 1. Podman with 4.6.2
+```
+# Remove existing podman if installed
+sudo apt-get remove -y podman
+
+# Add Podman repository for specific version
+. /etc/os-release
+
+# Add the unstable repository (where 4.6.2 is available)
+echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list
+
+# Add the GPG key
+curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/kubic-libcontainers-unstable.gpg > /dev/null
+
+# Update package list
+sudo apt-get update
+
+# Install specific version
+sudo apt-get install podman=4:4.6.2-0ubuntu22.04+obs81.12
+```
+
+#2 kind & kubectl 
+
+```
+# Download Kind binary (latest version supports K8s 1.33.2)
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+# Verify installation
+kind --version
+
+# Download kubectl 1.33.2
+curl -LO "https://dl.k8s.io/release/v1.33.2/bin/linux/amd64/kubectl"
+
+# Verify the binary (optional but recommended)
+curl -LO "https://dl.k8s.io/release/v1.33.2/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+# Install kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/kubectl
+
+# Verify installation
+kubectl version --client
+
+```
+
+# 3. Create kind k8s
+
+```
+KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster \
+  --name gpu-cluster4 \
+  --image kindest/node:v1.33.2
+```
+
+
+# 4. Install NVIDIA Container Toolkit in Kind nodes
+```
+podman exec -it gpu-cluster4-control-plane bash << 'SETUP'
+# Install prerequisites
+apt-get update
+apt-get install -y curl gnupg wget
+
+# Copy NVIDIA libraries to standard locations
+mkdir -p /usr/lib/x86_64-linux-gnu /usr/local/nvidia/lib64
+cp -a /host-lib/libnvidia*.so* /usr/lib/x86_64-linux-gnu/
+cp -a /host-lib/libcuda*.so* /usr/lib/x86_64-linux-gnu/
+cp -a /usr/lib/x86_64-linux-gnu/libnvidia*.so* /usr/local/nvidia/lib64/
+cp -a /usr/lib/x86_64-linux-gnu/libcuda*.so* /usr/local/nvidia/lib64/
+
+# Update library cache
+cat > /etc/ld.so.conf.d/nvidia.conf << 'EOF'
+/usr/lib/x86_64-linux-gnu
+/usr/local/nvidia/lib64
+EOF
+ldconfig
+
+# (Optional) Install NVIDIA Container Toolkit for CDI support
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+apt-get update
+apt-get install -y nvidia-container-toolkit
+
+# Verify
+ldconfig -p | grep libnvidia-ml
+ls -la /dev/nvidia*
+```
+
+# 5. Deploy NVIDIA device plugin with CDI strategy
+
+
+device plugin (overwrite deviceDiscoveryStrategy)
+
+```
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+      - name: nvidia-install-dir
+        emptyDir: {}  # Shared between init and main container
+      - name: host-root
+        hostPath:
+          path: /
+      initContainers:
+      - name: nvidia-driver-installer
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /nvidia-install/lib
+          # Copy libraries from Kind node to shared volume
+          cp -av /host-root/usr/lib/x86_64-linux-gnu/libnvidia*.so* /nvidia-install/lib/
+          cp -av /host-root/usr/lib/x86_64-linux-gnu/libcuda*.so* /nvidia-install/lib/
+          ls -la /nvidia-install/lib/ | grep nvidia-ml
+        volumeMounts:
+        - name: nvidia-install-dir
+          mountPath: /nvidia-install
+        - name: host-root
+          mountPath: /host-root
+          readOnly: true
+      containers:
+      - name: nvidia-device-plugin-ctr
+        image: nvcr.io/nvidia/k8s-device-plugin:v0.14.5
+        env:
+        - name: LD_LIBRARY_PATH
+          value: "/nvidia-install/lib"  # Point to shared libraries
+        - name: FAIL_ON_INIT_ERROR
+          value: "false"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+        - name: nvidia-install-dir
+          mountPath: /nvidia-install
+          readOnly: true
+```  

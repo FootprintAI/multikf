@@ -1,0 +1,22 @@
+FROM kindest/node:v1.33.2
+
+# Install prerequisites
+RUN apt-get update && \
+    apt-get install -y curl gnupg wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create NVIDIA library directory
+RUN mkdir -p /opt/nvidia/lib
+
+# Copy NVIDIA libraries from host during build
+# Note: These will be copied via build args or volume mounts
+# The actual libraries will be added during the build process
+
+# Set up ldconfig to recognize NVIDIA libraries
+RUN echo "/opt/nvidia/lib" > /etc/ld.so.conf.d/nvidia.conf
+
+# Add labels for tracking
+LABEL description="Kind node image with NVIDIA GPU support"
+LABEL nvidia.enabled="true"
+LABEL version="1.33.2-gpu"

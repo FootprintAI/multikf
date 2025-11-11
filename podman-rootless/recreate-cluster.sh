@@ -7,6 +7,16 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Configuration
+# Set USE_PREBUILT_IMAGE=true if using pre-built image with prerequisites installed
+# Note: NVIDIA libraries will still be copied from host to avoid version mismatch
+USE_PREBUILT_IMAGE="${USE_PREBUILT_IMAGE:-true}"
+KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-asia-east1-docker.pkg.dev/footprintai-dev/kafeido-mlops/kindest/node-cuda:v1.33.2}"
+
+# Always copy libraries to avoid driver version mismatch
+# Pre-built image only saves time on apt-get installs
+ALWAYS_COPY_LIBS="${ALWAYS_COPY_LIBS:-true}"
+
 echo "=========================================="
 echo "Recreating kind cluster with GPU support"
 echo "=========================================="
@@ -17,12 +27,15 @@ echo "Step 1: Deleting existing cluster..."
 kind delete cluster --name gpu-cluster4 || echo "Cluster doesn't exist, continuing..."
 echo ""
 
-# Create new cluster (basic config, mounts won't work in rootless podman)
+# Create new cluster
 echo "Step 2: Creating new cluster..."
+echo "Using image: $KIND_NODE_IMAGE"
+echo "Pre-built image: $USE_PREBUILT_IMAGE"
+
 KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster \
   --name gpu-cluster4 \
   --config "$SCRIPT_DIR/gpu-kind-config.yaml" \
-  --image kindest/node:v1.33.2
+  --image "$KIND_NODE_IMAGE"
 echo ""
 
 # Wait for cluster to be ready
@@ -32,24 +45,43 @@ echo ""
 
 # Setup NVIDIA libraries in nodes (workaround for rootless podman mount issues)
 echo "Step 4: Setting up NVIDIA libraries in kind nodes..."
-echo "Note: Bind mounts don't work properly in rootless Podman, so we copy libraries directly"
+
+if [ "$USE_PREBUILT_IMAGE" = "true" ]; then
+    echo "Using pre-built image with prerequisites installed"
+    if [ "$ALWAYS_COPY_LIBS" = "true" ]; then
+        echo "⚠ Copying libraries from runtime host to avoid driver version mismatch"
+        echo "  (Libraries must match the kernel driver version)"
+    else
+        echo "✓ Skipping library copy (ALWAYS_COPY_LIBS=false)"
+        echo "  ⚠ Warning: This may cause version mismatch errors!"
+    fi
+else
+    echo "Using standard image, will install prerequisites and copy libraries"
+fi
 echo ""
 
 # Function to setup a node
 setup_node() {
     local node=$1
+    local skip_apt=$2
     echo "Setting up node: $node"
     echo "-------------------"
 
-    # Install prerequisites and create directories
-    podman exec -i $node bash << 'SETUP'
+    if [ "$skip_apt" != "true" ]; then
+        # Install prerequisites (skip if using pre-built image)
+        echo "  Installing prerequisites..."
+        podman exec -i $node bash << 'SETUP'
 set -e
 apt-get update -qq
 apt-get install -y curl gnupg wget > /dev/null 2>&1
 mkdir -p /opt/nvidia/lib
 SETUP
+    else
+        echo "  Skipping apt-get (using pre-built image)"
+        podman exec -i $node bash -c "mkdir -p /opt/nvidia/lib"
+    fi
 
-    echo "  Copying NVIDIA libraries from host to isolated directory..."
+    echo "  Copying NVIDIA libraries from runtime host..."
     # Copy from host /lib/x86_64-linux-gnu - only NVIDIA and CUDA libraries
     for lib in /lib/x86_64-linux-gnu/libnvidia*.so* /lib/x86_64-linux-gnu/libcuda*.so*; do
         if [ -e "$lib" ]; then
@@ -74,12 +106,24 @@ SETUP2
     echo ""
 }
 
-# Setup control-plane
-setup_node "gpu-cluster4-control-plane"
+# Run setup based on configuration
+if [ "$USE_PREBUILT_IMAGE" = "true" ] && [ "$ALWAYS_COPY_LIBS" != "true" ]; then
+    # Skip everything if using pre-built image and not copying libs
+    echo "Skipping node setup (using pre-built image with ALWAYS_COPY_LIBS=false)"
+else
+    # Determine if we should skip apt-get
+    SKIP_APT="false"
+    if [ "$USE_PREBUILT_IMAGE" = "true" ]; then
+        SKIP_APT="true"
+    fi
 
-# Setup worker if it exists
-if podman ps --filter "name=gpu-cluster4-worker" --format "{{.Names}}" | grep -q worker; then
-    setup_node "gpu-cluster4-worker"
+    # Setup control-plane
+    setup_node "gpu-cluster4-control-plane" "$SKIP_APT"
+
+    # Setup worker if it exists
+    if podman ps --filter "name=gpu-cluster4-worker" --format "{{.Names}}" | grep -q worker; then
+        setup_node "gpu-cluster4-worker" "$SKIP_APT"
+    fi
 fi
 
 # Deploy device plugin
