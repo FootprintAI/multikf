@@ -2,8 +2,8 @@
 
 # Usage: ./get-cudadriver-2204.sh [CUDA_VERSION] [NVIDIA_DRIVER_VERSION]
 # Example: ./get-cudadriver-2204.sh 11-8 530
-# Example: ./get-cudadriver-2204.sh 12-0 550
-# If no version specified, installs latest CUDA with driver 550
+# Example: ./get-cudadriver-2204.sh 12-0 535
+# If no version specified, installs latest CUDA with driver 535
 
 # Exit on error, undefined variables, and pipe failures
 set -euo pipefail
@@ -16,7 +16,7 @@ fi
 
 # Parse CUDA version parameter
 CUDA_VERSION=${1:-"latest"}
-NVIDIA_DRIVER_VERSION=${2:-"550"}
+NVIDIA_DRIVER_VERSION=${2:-"535"}
 
 # Validate CUDA version format (should be like 11-8, 12-0, etc.)
 if [[ "$CUDA_VERSION" != "latest" ]] && [[ ! "$CUDA_VERSION" =~ ^[0-9]+-[0-9]+$ ]]; then
@@ -24,8 +24,8 @@ if [[ "$CUDA_VERSION" != "latest" ]] && [[ ! "$CUDA_VERSION" =~ ^[0-9]+-[0-9]+$ 
     echo "Available versions: 11-8, 12-0, 12-1, 12-2, 12-3, 12-4, 12-5, 12-6"
     echo "Usage: $0 [CUDA_VERSION] [NVIDIA_DRIVER_VERSION]"
     echo "Example: $0 11-8 530"
-    echo "Example: $0 12-0 550"
-    echo "Default: latest CUDA with driver 550"
+    echo "Example: $0 12-0 535"
+    echo "Default: latest CUDA with driver 535"
     exit 1
 fi
 
@@ -85,8 +85,25 @@ apt-get update
 # Older drivers: nvidia-driver-450 for k80, nvidia-driver-515 for cuda11.8 compatibility
 # Modern drivers: nvidia-driver-535, nvidia-driver-550, nvidia-driver-560
 echo "Installing nvidia-driver-$NVIDIA_DRIVER_VERSION..."
-apt-get install -y nvidia-driver-$NVIDIA_DRIVER_VERSION
-apt-mark hold nvidia-driver-$NVIDIA_DRIVER_VERSION
+
+# Try to install the driver, with fallback to cuda-drivers if it fails
+if apt-get install -y nvidia-driver-$NVIDIA_DRIVER_VERSION 2>/dev/null; then
+    echo "Successfully installed nvidia-driver-$NVIDIA_DRIVER_VERSION"
+    apt-mark hold nvidia-driver-$NVIDIA_DRIVER_VERSION
+else
+    echo "Warning: Failed to install nvidia-driver-$NVIDIA_DRIVER_VERSION from Ubuntu repository"
+    echo "Attempting to install cuda-drivers from CUDA repository instead..."
+
+    # Install cuda-drivers metapackage which pulls appropriate driver from CUDA repo
+    if apt-get install -y cuda-drivers; then
+        echo "Successfully installed cuda-drivers from CUDA repository"
+    else
+        echo "Error: Failed to install NVIDIA drivers"
+        echo "You may need to manually install a compatible driver version"
+        echo "Common driver versions: 470, 515, 525, 535"
+        exit 1
+    fi
+fi
 
 
 # install CUDA toolkit
