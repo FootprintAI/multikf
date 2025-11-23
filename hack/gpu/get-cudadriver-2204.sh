@@ -81,6 +81,38 @@ echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://devel
 echo "Updating package lists with CUDA repository..."
 apt-get update
 
+# Pre-installation cleanup
+echo ""
+echo "Checking for conflicting packages..."
+
+# Check for held packages
+HELD_PACKAGES=$(apt-mark showhold | grep -E '^(nvidia|cuda)' || true)
+if [ -n "$HELD_PACKAGES" ]; then
+    echo "Found held packages that may cause conflicts:"
+    echo "$HELD_PACKAGES"
+    echo ""
+    read -p "Do you want to unhold these packages? (recommended) (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        echo "Unholding packages..."
+        echo "$HELD_PACKAGES" | xargs -r apt-mark unhold
+    fi
+fi
+
+# Check for broken packages
+echo "Checking for broken packages..."
+if dpkg -l | grep -E '^(iU|iF)' | grep -qE '(nvidia|cuda)'; then
+    echo "Found broken NVIDIA/CUDA packages. Attempting to fix..."
+    apt-get install -f -y || true
+    dpkg --configure -a || true
+fi
+
+# Remove any conflicting partial installations
+echo "Cleaning up any partial installations..."
+apt-get autoremove -y
+apt-get autoclean
+
+echo ""
 # install NVIDIA driver
 # Older drivers: nvidia-driver-450 for k80, nvidia-driver-515 for cuda11.8 compatibility
 # Modern drivers: nvidia-driver-535, nvidia-driver-550, nvidia-driver-560
@@ -143,19 +175,38 @@ if [[ "$DRIVER_INSTALLED" == false ]]; then
     echo "ERROR: All driver installation methods failed"
     echo "=========================================="
     echo ""
+    echo "Running diagnostics..."
+    echo ""
+
+    echo "--- Available CUDA driver packages ---"
+    apt-cache search cuda-drivers | head -10 || true
+    echo ""
+
+    echo "--- Available NVIDIA drivers in Ubuntu repo ---"
+    apt-cache search nvidia-driver | grep '^nvidia-driver-[0-9]' | head -10 || true
+    echo ""
+
+    echo "--- Currently held packages ---"
+    apt-mark showhold | grep -E '(nvidia|cuda)' || echo "None"
+    echo ""
+
+    echo "--- Broken packages ---"
+    dpkg -l | grep -E '^(iU|iF)' | grep -E '(nvidia|cuda)' || echo "None"
+    echo ""
+
     echo "Please try one of the following manual approaches:"
     echo ""
-    echo "1. Check available drivers in CUDA repository:"
-    echo "   apt-cache search cuda-drivers"
+    echo "1. Clean removal and retry:"
+    echo "   ./remove-cudadriver-2204.sh --full"
+    echo "   reboot"
+    echo "   ./get-cudadriver-2204.sh"
     echo ""
-    echo "2. Check available drivers in Ubuntu repository:"
-    echo "   apt-cache search nvidia-driver | grep ^nvidia-driver"
+    echo "2. Manually specify a different driver version:"
+    echo "   ./get-cudadriver-2204.sh latest 525"
+    echo "   ./get-cudadriver-2204.sh latest 530"
     echo ""
-    echo "3. List NVIDIA packages in CUDA repository:"
-    echo "   apt list --all-versions 'nvidia-driver-*' 2>/dev/null | grep cuda"
-    echo ""
-    echo "4. Remove conflicting packages and retry:"
-    echo "   apt-get autoremove -y && apt-get autoclean"
+    echo "3. Check for system updates:"
+    echo "   apt-get update && apt-get upgrade -y"
     echo ""
     exit 1
 fi
