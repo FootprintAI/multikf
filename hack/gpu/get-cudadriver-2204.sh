@@ -86,24 +86,84 @@ apt-get update
 # Modern drivers: nvidia-driver-535, nvidia-driver-550, nvidia-driver-560
 echo "Installing nvidia-driver-$NVIDIA_DRIVER_VERSION..."
 
-# Try to install the driver, with fallback to cuda-drivers if it fails
-if apt-get install -y nvidia-driver-$NVIDIA_DRIVER_VERSION 2>/dev/null; then
-    echo "Successfully installed nvidia-driver-$NVIDIA_DRIVER_VERSION"
-    apt-mark hold nvidia-driver-$NVIDIA_DRIVER_VERSION
-else
-    echo "Warning: Failed to install nvidia-driver-$NVIDIA_DRIVER_VERSION from Ubuntu repository"
-    echo "Attempting to install cuda-drivers from CUDA repository instead..."
+DRIVER_INSTALLED=false
 
-    # Install cuda-drivers metapackage which pulls appropriate driver from CUDA repo
-    if apt-get install -y cuda-drivers; then
-        echo "Successfully installed cuda-drivers from CUDA repository"
+# Method 1: Try Ubuntu repository driver
+echo "Attempting Method 1: Ubuntu repository (nvidia-driver-$NVIDIA_DRIVER_VERSION)..."
+if apt-get install -y nvidia-driver-$NVIDIA_DRIVER_VERSION 2>/dev/null; then
+    echo "✓ Successfully installed nvidia-driver-$NVIDIA_DRIVER_VERSION from Ubuntu repository"
+    apt-mark hold nvidia-driver-$NVIDIA_DRIVER_VERSION
+    DRIVER_INSTALLED=true
+else
+    echo "✗ Failed to install from Ubuntu repository (dependency conflicts)"
+fi
+
+# Method 2: Try CUDA repository driver with specific version
+if [[ "$DRIVER_INSTALLED" == false ]]; then
+    echo ""
+    echo "Attempting Method 2: CUDA repository (cuda-drivers-$NVIDIA_DRIVER_VERSION)..."
+    if apt-get install -y cuda-drivers-$NVIDIA_DRIVER_VERSION 2>/dev/null; then
+        echo "✓ Successfully installed cuda-drivers-$NVIDIA_DRIVER_VERSION from CUDA repository"
+        DRIVER_INSTALLED=true
     else
-        echo "Error: Failed to install NVIDIA drivers"
-        echo "You may need to manually install a compatible driver version"
-        echo "Common driver versions: 470, 515, 525, 535"
-        exit 1
+        echo "✗ Package cuda-drivers-$NVIDIA_DRIVER_VERSION not available"
     fi
 fi
+
+# Method 3: Try generic cuda-drivers metapackage
+if [[ "$DRIVER_INSTALLED" == false ]]; then
+    echo ""
+    echo "Attempting Method 3: Generic cuda-drivers metapackage..."
+    if apt-get install -y cuda-drivers 2>/dev/null; then
+        echo "✓ Successfully installed cuda-drivers from CUDA repository"
+        DRIVER_INSTALLED=true
+    else
+        echo "✗ Failed to install cuda-drivers metapackage"
+    fi
+fi
+
+# Method 4: Try alternative stable driver version (535)
+if [[ "$DRIVER_INSTALLED" == false ]] && [[ "$NVIDIA_DRIVER_VERSION" != "535" ]]; then
+    echo ""
+    echo "Attempting Method 4: Fallback to stable driver (nvidia-driver-535)..."
+    if apt-get install -y nvidia-driver-535 2>/dev/null; then
+        echo "✓ Successfully installed nvidia-driver-535 as fallback"
+        apt-mark hold nvidia-driver-535
+        DRIVER_INSTALLED=true
+        NVIDIA_DRIVER_VERSION="535"
+    else
+        echo "✗ Failed to install nvidia-driver-535"
+    fi
+fi
+
+# Final check
+if [[ "$DRIVER_INSTALLED" == false ]]; then
+    echo ""
+    echo "=========================================="
+    echo "ERROR: All driver installation methods failed"
+    echo "=========================================="
+    echo ""
+    echo "Please try one of the following manual approaches:"
+    echo ""
+    echo "1. Check available drivers in CUDA repository:"
+    echo "   apt-cache search cuda-drivers"
+    echo ""
+    echo "2. Check available drivers in Ubuntu repository:"
+    echo "   apt-cache search nvidia-driver | grep ^nvidia-driver"
+    echo ""
+    echo "3. List NVIDIA packages in CUDA repository:"
+    echo "   apt list --all-versions 'nvidia-driver-*' 2>/dev/null | grep cuda"
+    echo ""
+    echo "4. Remove conflicting packages and retry:"
+    echo "   apt-get autoremove -y && apt-get autoclean"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "Driver installation successful!"
+echo "Installed driver version: $NVIDIA_DRIVER_VERSION"
+echo ""
 
 
 # install CUDA toolkit
