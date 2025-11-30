@@ -58,9 +58,8 @@ apt-get update
 # install older driver
 # apt-get install -y nvidia-driver-450 for k80
 
-# or use apt-get install -y nvidia-driver-515 to install previous driver version to avoid conflict in cuda11.8
-apt-get install -y nvidia-driver-530
-apt-mark hold nvidia-driver-530
+# For Ubuntu 24.04, use nvidia-driver-560
+apt-get install -y nvidia-driver-560
 
 
 # install CUDA toolkit
@@ -73,6 +72,9 @@ else
     apt-get install -y cuda
 fi
 
+# Hold nvidia driver after CUDA installation to prevent unwanted upgrades
+apt-mark hold nvidia-driver-560
+
 # install cuda related lib
 ## cublas for cuda12, ref: https://developer.nvidia.com/nvidia-hpc-sdk-releases
 ## curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
@@ -81,7 +83,7 @@ fi
 ## apt-get install -y nvhpc-24-5
 
 ## install cudnn8 for cuda12, ref: https://developer.nvidia.com/rdp/cudnn-archive
-## https://developer.nvidia.com/downloads/compute/cudnn/secure/8.9.7/local_installers/12.x/cudnn-local-repo-ubuntu2204-8.9.7.29_1.0-1_amd64.deb/
+## https://developer.nvidia.com/downloads/compute/cudnn/secure/8.9.7/local_installers/12.x/cudnn-local-repo-ubuntu2404-8.9.7.29_1.0-1_amd64.deb/
 ## you got to login to be able to download it
 ##
 ## then run

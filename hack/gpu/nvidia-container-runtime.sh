@@ -3,30 +3,38 @@
 # run as root
 if (( $EUID != 0 )); then
    echo "this script should be running as root identity"
-   exit
+   exit 1
 fi
 
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+echo "Installing NVIDIA Container Toolkit..."
 
-apt-get update && apt-get install -y nvidia-container-toolkit nvidia-container-runtime
+# Install prerequisites
+apt-get update && apt-get install -y --no-install-recommends curl gnupg2
+
+# Configure the production repository with GPG key (modern approach)
+echo "Configuring NVIDIA Container Toolkit repository..."
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# Update package list and install toolkit
+echo "Installing nvidia-container-toolkit..."
+apt-get update
+apt-get install -y nvidia-container-toolkit
+
+# Configure Docker to use NVIDIA runtime (replaces manual daemon.json editing)
+echo "Configuring Docker runtime..."
+nvidia-ctk runtime configure --runtime=docker
+
+# Optionally preserve custom MTU and cgroup settings if needed
+# You may need to manually merge these settings into /etc/docker/daemon.json:
+# {
+#     "mtu": 1374,
+#     "exec-opts": ["native.cgroupdriver=systemd"]
+# }
 
 # if you were using containerd, please check here: https://github.com/NVIDIA/k8s-device-plugin#configure-containerd
-# append /etc/docker/daemon.json with the following config
-tee /etc/docker/daemon.json <<EOF
-{
-    "mtu": 1374,
-    "exec-opts": ["native.cgroupdriver=systemd"],
-    "default-runtime": "nvidia",
-    "runtimes": {
-        "nvidia": {
-            "path": "/usr/bin/nvidia-container-runtime",
-            "runtimeArgs": []
-        }
-    }
-}
-EOF
 
 # restart dockerd
 systemctl daemon-reload
