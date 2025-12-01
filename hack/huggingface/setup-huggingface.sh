@@ -16,9 +16,13 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Create virtual environment if it doesn't exist
+# Create virtual environment if it doesn't exist or is invalid
 if [[ ! -d "$VENV_DIR" ]]; then
     echo "Creating virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+elif [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+    echo "Virtual environment at $VENV_DIR is corrupted. Removing and recreating..."
+    rm -rf "$VENV_DIR"
     python3 -m venv "$VENV_DIR"
 else
     echo "Virtual environment already exists at $VENV_DIR"
