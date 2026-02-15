@@ -5,6 +5,7 @@ import (
 
 	"github.com/footprintai/multikf/pkg/k8s"
 	"github.com/footprintai/multikf/pkg/machine"
+	"github.com/footprintai/multikf/pkg/mirror"
 	"github.com/footprintai/multikf/pkg/template"
 )
 
@@ -27,9 +28,33 @@ type DefaultTemplateConfig struct {
 	nodeLabels            []machine.NodeLabel
 	localPath             string
 	nodeVersion           k8s.KindK8sVersion
+	registryMirrors       []mirror.Registry // Using the Registry type from mirror package
 }
 
-func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, kubeApiPort int, kubeApiIP string, gpus int, exportPorts []machine.ExportPortPair, auditEnabled bool, auditFileAbsolutePath string, workerCount int, nodeLabels []machine.NodeLabel, localPath string, nodeVersion k8s.KindK8sVersion) *DefaultTemplateConfig {
+// NewDefaultTemplateConfig creates a default template config
+// registryMirrors can be nil or an empty slice if no registry mirrors are needed
+func NewDefaultTemplateConfig(
+	name string,
+	cpus int,
+	memory int,
+	sshport int,
+	kubeApiPort int,
+	kubeApiIP string,
+	gpus int,
+	exportPorts []machine.ExportPortPair,
+	auditEnabled bool,
+	auditFileAbsolutePath string,
+	workerCount int,
+	nodeLabels []machine.NodeLabel,
+	localPath string,
+	nodeVersion k8s.KindK8sVersion,
+	registryMirrors []mirror.Registry,
+) *DefaultTemplateConfig {
+	// If registryMirrors is nil, initialize as empty slice
+	if registryMirrors == nil {
+		registryMirrors = []mirror.Registry{}
+	}
+
 	return &DefaultTemplateConfig{
 		name:                  name,
 		cpus:                  cpus,
@@ -45,7 +70,30 @@ func NewDefaultTemplateConfig(name string, cpus int, memory int, sshport int, ku
 		nodeLabels:            nodeLabels,
 		localPath:             localPath,
 		nodeVersion:           nodeVersion,
+		registryMirrors:       registryMirrors,
 	}
+}
+
+// AddRegistryMirror adds a registry mirror to the config
+func (t *DefaultTemplateConfig) AddRegistryMirror(registry mirror.Registry) {
+	t.registryMirrors = append(t.registryMirrors, registry)
+}
+
+// AddAuthenticatedRegistryMirror adds a registry mirror with authentication to the config
+func (t *DefaultTemplateConfig) AddAuthenticatedRegistryMirror(source string, mirrorURL string, username string, password string) {
+	t.registryMirrors = append(t.registryMirrors, mirror.Registry{
+		Source:  source,
+		Mirrors: []string{mirrorURL},
+		Auth: &mirror.Auth{
+			Username: username,
+			Password: password,
+		},
+	})
+}
+
+// GetRegistry implements the mirror.Getter interface
+func (t *DefaultTemplateConfig) GetRegistry() []mirror.Registry {
+	return t.registryMirrors
 }
 
 func (t *DefaultTemplateConfig) GetName() string {
